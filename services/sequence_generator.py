@@ -24,7 +24,7 @@ class SequenceGenerator(QObject):
     progress_updated = pyqtSignal(int)            # Progress percentage (0-100)
     status_updated = pyqtSignal(str)              # Status message
     
-    def __init__(self, api_client: Optional[Union[APIClient, None]] = None):
+    def __init__(self, api_client: Optional[Union[APIClient, None]] = None): # type: ignore
         """Initialize the sequence generator.
         
         Args:

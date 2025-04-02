@@ -197,46 +197,38 @@ Include any previous sequence knowledge when responding to my questions.
 My message: {prompt}
 """
 
-# Simple system prompt template for Ollama (reduced instructions)
-OLLAMA_SYSTEM_PROMPT_TEMPLATE = """
-You are a helpful assistant specialized in spring force testing systems.
-
-SPRING SPECIFICATIONS STATUS:
-{specifications_status}
-
-When asked to generate a test sequence, provide a JSON array with these properties:
-Row, CMD, Description, Condition, Unit, Tolerance, Speed rpm
-
-For example:
-[
-  {{"Row": "R00", "CMD": "ZF", "Description": "Zero Force", "Condition": "", "Unit": "", "Tolerance": "", "Speed rpm": ""}},
-  {{"Row": "R01", "CMD": "TH", "Description": "Search Contact", "Condition": "10", "Unit": "N", "Tolerance": "", "Speed rpm": "10"}},
-  {{"Row": "R02", "CMD": "FL(P)", "Description": "Measure Free Length", "Condition": "", "Unit": "mm", "Tolerance": "50(45,55)", "Speed rpm": ""}}
-]
-
-For general questions, respond naturally as a helpful assistant.
-"""
-
 # Simple user prompt template for Ollama
 OLLAMA_USER_PROMPT_TEMPLATE = """
+USER INTENT: {intent_flag}
+
 SPRING SPECIFICATIONS:
 {parameter_text}
 
 TEST TYPE:
 {test_type_text}
 
-IMPORTANT OUTPUT FORMAT:
-- If you're generating a test sequence, you MUST respond with ONLY a valid JSON array
-- Do NOT include any text explanations, markdown formatting, or any content outside of the JSON array
-- The array must contain items with these EXACT keys: "Row", "CMD", "Description", "Condition", "Unit", "Tolerance", "Speed rpm"
-
-REQUIRED FIELDS:
-- Free Length (REQUIRED): {free_length_value} mm
-- Set Points (REQUIRED): Available in the specifications
-- Component Type: Compression/Tension as specified
-
-USER REQUEST:
+CONVERSATION CONTEXT:
 {prompt}
+
+RESPONSE GUIDANCE:
+- For general questions or conversation, respond naturally in plain text
+- For test sequence generation requests, respond with a valid JSON array only
+- For analysis that includes a sequence, use the hybrid format with markers:
+  ---SEQUENCE_DATA_START---
+  [Your JSON array sequence data here]
+  ---SEQUENCE_DATA_END---
+
+CRITICAL SPECIFICATION REQUIREMENTS - READ CAREFULLY:
+- ONLY Free Length and Set Points (position and load values) are MANDATORY
+- Wire diameter, outer diameter, coil count and all other measurements are OPTIONAL
+- DO NOT ask for optional specifications
+- DO NOT prevent sequence generation if only optional specifications are missing
+- If both Free Length and Set Points are provided, GENERATE THE SEQUENCE regardless of missing optional specifications
+
+KEY SPECIFICATIONS (When test sequence is requested):
+- Free Length: {free_length_value} mm
+- Set Points: As listed in specifications above
+- Component Type: {test_type_text}
 """
 
 # Default settings
@@ -257,10 +249,11 @@ def get_prompt_templates(provider="together"):
         provider (str): The API provider name ('together' or 'ollama')
         
     Returns:
-        tuple: (system_prompt_template, user_prompt_template)
+        tuple: (system_prompt_template, user_prompt_template) for Together.ai
+               (None, user_prompt_template) for Ollama since system prompt is embedded in the model
     """
     if provider.lower() == "ollama":
-        return OLLAMA_SYSTEM_PROMPT_TEMPLATE, OLLAMA_USER_PROMPT_TEMPLATE
+        return None, OLLAMA_USER_PROMPT_TEMPLATE
     else:
         return SYSTEM_PROMPT_TEMPLATE, USER_PROMPT_TEMPLATE
 
@@ -269,6 +262,5 @@ __all__ = [
     'USER_PROMPT_TEMPLATE', 
     'SYSTEM_PROMPT_TEMPLATE',
     'OLLAMA_USER_PROMPT_TEMPLATE',
-    'OLLAMA_SYSTEM_PROMPT_TEMPLATE',
     'get_prompt_templates'
 ] 

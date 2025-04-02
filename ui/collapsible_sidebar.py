@@ -34,7 +34,7 @@ class CollapsibleSidebar(QWidget):
         self.export_service = export_service
         
         # Store current state
-        self.is_collapsed = False
+        self.is_collapsed = True  # Changed from False to True to start collapsed
         self.default_width = 500
         self.collapsed_width = 40
         self.animation_duration = 200  # ms
@@ -217,8 +217,11 @@ class CollapsibleSidebar(QWidget):
         # Add content container to main layout
         self.main_layout.addWidget(self.content_container)
         
-        # Set default sizes
-        self.setFixedWidth(self.default_width)
+        # Set initial width - start collapsed
+        self.setFixedWidth(self.collapsed_width)
+        
+        # Hide content container since we're starting collapsed
+        self.content_container.hide()
     
     def setup_animations(self):
         """Set up animations for collapsing/expanding."""

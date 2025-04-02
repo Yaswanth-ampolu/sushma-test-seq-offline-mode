@@ -213,6 +213,9 @@ class ChatPanel(QWidget):
             }
         """)
         
+        # Install event filter to capture key events for Ctrl+Enter shortcut
+        self.user_input.installEventFilter(self)
+        
         # Add the input text area to the input frame layout
         input_frame_layout.addWidget(self.user_input, 1)  # Give it stretch factor
         
@@ -1206,31 +1209,39 @@ class ChatPanel(QWidget):
             return "SPECIFICATIONS NOT ENABLED: Specifications exist but are not enabled. Ask the user to enable them in the Specifications panel."
         
         # Check for missing essential specifications
-        missing_specs = []
+        missing_required_specs = []
+        missing_optional_specs = []
         
+        # REQUIRED specifications
         if spring_spec.free_length_mm <= 0:
-            missing_specs.append("Free Length")
+            missing_required_specs.append("Free Length")
         
-        if spring_spec.wire_dia_mm <= 0:
-            missing_specs.append("Wire Diameter")
-        
-        if spring_spec.outer_dia_mm <= 0:
-            missing_specs.append("Outer Diameter")
-        
-        if spring_spec.coil_count <= 0:
-            missing_specs.append("Coil Count")
-        
-        # Check set points
+        # Check set points - REQUIRED
         valid_set_points = [sp for sp in spring_spec.set_points if sp.enabled and sp.position_mm > 0 and sp.load_n > 0]
         
         if not valid_set_points:
-            missing_specs.append("Set Points (position and load)")
+            missing_required_specs.append("Set Points (position and load)")
         
-        if missing_specs:
-            return f"INCOMPLETE SPECIFICATIONS: The following specifications are missing or invalid: {', '.join(missing_specs)}. Please ask the user to provide them before generating a test sequence."
+        # OPTIONAL specifications
+        if spring_spec.wire_dia_mm <= 0:
+            missing_optional_specs.append("Wire Diameter")
         
-        # All specifications are valid
-        return f"COMPLETE SPECIFICATIONS: All necessary spring specifications are set and valid. The specification includes {len(valid_set_points)} valid set points."
+        if spring_spec.outer_dia_mm <= 0:
+            missing_optional_specs.append("Outer Diameter")
+        
+        if spring_spec.coil_count <= 0:
+            missing_optional_specs.append("Coil Count")
+        
+        # Check if any REQUIRED specifications are missing
+        if missing_required_specs:
+            return f"INCOMPLETE REQUIRED SPECIFICATIONS: The following REQUIRED specifications are missing or invalid: {', '.join(missing_required_specs)}. Please ask the user to provide them before generating a test sequence."
+        
+        # All REQUIRED specifications are valid, note optional ones that are missing
+        optional_specs_message = ""
+        if missing_optional_specs:
+            optional_specs_message = f" The following OPTIONAL specifications are missing but not required: {', '.join(missing_optional_specs)}."
+        
+        return f"COMPLETE REQUIRED SPECIFICATIONS: All necessary spring specifications are set and valid. The specification includes {len(valid_set_points)} valid set points.{optional_specs_message}"
     
     def _create_spec_form_manager(self):
         """Create the specification form manager if it doesn't exist."""
@@ -1667,4 +1678,24 @@ class ChatPanel(QWidget):
         self.show_specification_form()
         
         # Refresh the display
-        self.refresh_chat_display() 
+        self.refresh_chat_display()
+    
+    def eventFilter(self, obj, event):
+        """Filter events to handle Ctrl+Enter shortcut in the text input.
+        
+        Args:
+            obj: Object that triggered the event.
+            event: Event to filter.
+            
+        Returns:
+            bool: True if the event was handled, False otherwise.
+        """
+        if obj == self.user_input and event.type() == event.KeyPress:
+            # Check for Ctrl+Enter
+            if event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier:
+                # Send the message
+                self.on_send_clicked()
+                return True
+        
+        # Let the base class handle the event
+        return super().eventFilter(obj, event) 

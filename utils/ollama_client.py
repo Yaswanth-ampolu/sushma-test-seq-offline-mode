@@ -93,15 +93,28 @@ def extract_command_sequence(text: str) -> Dict[str, Any]:
     """
     import json
     
-    # Try to extract JSON from the response
-    json_start_idx = text.find("[")
-    json_end_idx = text.rfind("]") + 1
+    # Check if the response uses the hybrid format with markers
+    sequence_start_marker = "---SEQUENCE_DATA_START---"
+    sequence_end_marker = "---SEQUENCE_DATA_END---"
     
-    if json_start_idx >= 0 and json_end_idx > json_start_idx:
-        # Found JSON-like syntax in brackets
-        json_content = text[json_start_idx:json_end_idx]
+    if sequence_start_marker in text and sequence_end_marker in text:
+        # Extract data between markers
+        start_idx = text.find(sequence_start_marker) + len(sequence_start_marker)
+        end_idx = text.find(sequence_end_marker)
+        if start_idx >= 0 and end_idx > start_idx:
+            json_content = text[start_idx:end_idx].strip()
+        else:
+            json_content = text
     else:
-        json_content = text
+        # Try to extract JSON from the response (traditional way)
+        json_start_idx = text.find("[")
+        json_end_idx = text.rfind("]") + 1
+        
+        if json_start_idx >= 0 and json_end_idx > json_start_idx:
+            # Found JSON-like syntax in brackets
+            json_content = text[json_start_idx:json_end_idx]
+        else:
+            json_content = text
     
     # Clean up any markdown formatting
     if json_content.startswith("```") and json_content.endswith("```"):
@@ -185,11 +198,39 @@ class OllamaAPIClientWorker(QObject):
         # Extract free length value for template
         free_length_value = self.parameters.get('Free Length', 'Not provided')
         
+        # If free_length_value is not provided, check if it's in the spring_specification
+        if free_length_value == 'Not provided' and 'spring_specification' in self.parameters:
+            # Try to get it from the spring_specification
+            spring_spec = self.parameters['spring_specification']
+            if isinstance(spring_spec, dict) and 'free_length_mm' in spring_spec:
+                free_length_value = str(spring_spec['free_length_mm'])
+                print(f"Found free length in spring_specification: {free_length_value}")
+        
         # Check if test_type is provided in parameters
         test_type_text = ""
         if "Test Type" in self.parameters:
             test_type = self.parameters["Test Type"]
             test_type_text = f"This should be a {test_type} test sequence."
+        
+        # Determine the user's intent based on the prompt or a dedicated flag
+        intent_flag = "GENERAL_CONVERSATION"
+        
+        # Check for explicit test sequence generation requests
+        sequence_keywords = ["generate", "create", "make", "build", "produce"]
+        if any(keyword in original_prompt.lower() for keyword in sequence_keywords) and "sequence" in original_prompt.lower():
+            intent_flag = "GENERATE_TEST_SEQUENCE"
+        # Check for analysis requests    
+        elif any(keyword in original_prompt.lower() for keyword in ["analyze", "compare", "evaluate", "assess", "review"]):
+            intent_flag = "ANALYZE_WITH_SEQUENCE"
+        # Check if this is likely a general conversation or question
+        elif any(keyword in original_prompt.lower() for keyword in ["what", "how", "why", "when", "explain", "tell me about", "describe"]):
+            intent_flag = "GENERAL_CONVERSATION"
+        
+        # Force GENERATE_TEST_SEQUENCE intent if the prompt contains "generate the test sequence" or 
+        # "can you generate the test sequence" or similar direct requests
+        if re.search(r'(generate|create)\s+.{0,20}?(test\s+sequence|sequence)', original_prompt.lower()):
+            intent_flag = "GENERATE_TEST_SEQUENCE"
+            print(f"Forcing GENERATE_TEST_SEQUENCE intent based on direct request")
         
         # Get the appropriate prompt templates for the current provider
         # Use "ollama" directly since this is the Ollama client
@@ -200,8 +241,14 @@ class OllamaAPIClientWorker(QObject):
             parameter_text=parameter_text,
             test_type_text=test_type_text,
             prompt=original_prompt,
-            free_length_value=free_length_value
+            free_length_value=free_length_value,
+            intent_flag=intent_flag
         )
+        
+        # Add explicit FREE_LENGTH_INFO if we're generating a test sequence and have the value
+        if intent_flag == "GENERATE_TEST_SEQUENCE" and free_length_value != 'Not provided':
+            user_prompt += f"\n\nFREE_LENGTH_INFO: The spring's free length is {free_length_value} mm. This is a required specification that has been provided."
+            print(f"Added explicit FREE_LENGTH_INFO to prompt")
         
         # Include previous context if available
         if self.api_client.chat_memory:
