@@ -56,7 +56,8 @@ ASSISTANT_ICON = "🤖"
 FILE_FORMATS = {
     "CSV": ".csv",
     "JSON": ".json",
-    "Excel": ".xlsx"
+    "Excel": ".xlsx",
+    "TXT": ".txt"
 }
 
 # System prompt template for API

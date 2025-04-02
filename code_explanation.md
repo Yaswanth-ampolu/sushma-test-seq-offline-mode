@@ -10,6 +10,8 @@ This document provides a detailed explanation of the Spring Test App codebase, w
 4. [Response Handling](#response-handling)
 5. [Data Models](#data-models)
 6. [Key Components](#key-components)
+7. [Scrag Command Parsing Enhancement](#scrag-command-parsing-enhancement)
+8. [UI Enhancements](#ui-enhancements)
 
 ## Architecture Overview
 
@@ -623,4 +625,68 @@ The enhanced parsing logic was implemented in multiple places to ensure consiste
 2. In `utils/together_api_client.py` for API-generated sequences
 3. In `test_sequence_sample.py` for generating sample sequences with proper formatting
 
-This comprehensive approach ensures that Scrag command values are correctly handled at all points in the application's workflow, from input to display and export. 
+This comprehensive approach ensures that Scrag command values are correctly handled at all points in the application's workflow, from input to display and export.
+
+## UI Enhancements
+
+### Sidebar Components
+
+The Spring Test App features two key sidebar components that provide rich visualization and interaction capabilities:
+
+1. **WebEngineSidebar**: A modern sidebar component that uses PyQt's WebEngine capabilities for enhanced styling and animations. This component is used in the main chat interface.
+
+2. **CollapsibleSidebar**: A simpler sidebar implementation focused on providing collapsible behavior and basic content display. This is used in various contexts throughout the application.
+
+Both sidebar components fulfill the same essential purpose: displaying test sequence information, spring parameters, and specifications, while allowing the user to export sequences in various formats.
+
+### Sequence and JSON View Integration
+
+A recent enhancement to the application combines the previously separate Sequence and JSON tabs into a unified view with a dropdown selector. This improvement streamlines the user interface while maintaining full functionality.
+
+#### Implementation Details
+
+The integration was implemented in both sidebar classes:
+
+1. In the `WebEngineSidebar` and `CollapsibleSidebar` classes:
+   - The separate JSON tab was eliminated
+   - A view selector dropdown was added to the Sequence tab header
+   - A `QStackedWidget` was introduced to manage switching between table and JSON views
+   - Methods were added to handle view selection changes
+
+```python
+# Header with title and view selector
+header_layout = QHBoxLayout()
+
+# Table header
+sequence_title = QLabel("Generated Test Sequence")
+header_layout.addWidget(sequence_title)
+
+# Add view selector dropdown
+header_layout.addStretch()
+view_selector_label = QLabel("View:")
+header_layout.addWidget(view_selector_label)
+
+self.view_selector = QComboBox()
+self.view_selector.addItem("Table")
+self.view_selector.addItem("JSON")
+self.view_selector.setFixedWidth(80)
+self.view_selector.currentIndexChanged.connect(self.on_view_selector_changed)
+header_layout.addWidget(self.view_selector)
+```
+
+#### View Selection Mechanism
+
+The view selection is managed through a simple index-based approach:
+
+```python
+def on_view_selector_changed(self):
+    """Handle view selector changes."""
+    # Get current index
+    current_index = self.view_selector.currentIndex()
+    
+    # Show the selected view
+    self.sequence_stack.setCurrentIndex(current_index)
+    
+    # Log the change
+    logger.debug("Changed view to: %s", self.view_selector.currentText())
+```

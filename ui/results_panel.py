@@ -172,13 +172,16 @@ class ResultsPanel(QWidget):
     def on_export_clicked(self):
         """Handle export button clicks."""
         # Check if a sequence is available
-        if not self.current_sequence:
+        if not self.current_sequence or not self.export_service:
             QMessageBox.warning(self, "No Sequence", "No test sequence available to export.")
             return
         
         # Get selected format
         format_name = self.format_combo.currentText()
         file_extension = FILE_FORMATS.get(format_name, ".csv")
+        
+        # Debug print to verify format and extension
+        print(f"Exporting with format: {format_name}, extension: {file_extension}")
         
         # Get file name from user
         file_name, _ = QFileDialog.getSaveFileName(

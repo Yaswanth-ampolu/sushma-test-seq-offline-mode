@@ -89,14 +89,42 @@ class CollapsibleSidebar(QWidget):
         # Create tab widget for different views
         self.tab_widget = QTabWidget()
         
-        # Results table tab
-        table_tab = QWidget()
-        table_layout = QVBoxLayout()
+        # COMBINED SEQUENCE TAB - with view selector
+        sequence_tab = QWidget()
+        sequence_layout = QVBoxLayout(sequence_tab)
+        sequence_layout.setContentsMargins(5, 5, 5, 5)
+        sequence_layout.setSpacing(5)
         
-        # Results table label
-        table_label = QLabel("Generated Test Sequence")
-        table_label.setFont(QFont("Arial", 12, QFont.Bold))
-        table_layout.addWidget(table_label)
+        # Header with title and view selector
+        header_layout = QHBoxLayout()
+        
+        # Sequence title
+        sequence_title = QLabel("Generated Test Sequence")
+        sequence_title.setFont(QFont("Arial", 12, QFont.Bold))
+        header_layout.addWidget(sequence_title)
+        
+        # Add view selector dropdown
+        header_layout.addStretch()
+        view_selector_label = QLabel("View:")
+        header_layout.addWidget(view_selector_label)
+        
+        self.view_selector = QComboBox()
+        self.view_selector.addItem("Table")
+        self.view_selector.addItem("JSON")
+        self.view_selector.setFixedWidth(100)
+        self.view_selector.currentIndexChanged.connect(self.on_view_selector_changed)
+        header_layout.addWidget(self.view_selector)
+        
+        sequence_layout.addLayout(header_layout)
+        
+        # Create stacked widget to hold both views
+        self.sequence_stack = QStackedWidget()
+        
+        # Create container for table view
+        table_container = QWidget()
+        table_layout = QVBoxLayout(table_container)
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.setSpacing(0)
         
         # Results table
         self.results_table = QTableView()
@@ -104,8 +132,27 @@ class CollapsibleSidebar(QWidget):
         self.results_table.setSortingEnabled(True)
         table_layout.addWidget(self.results_table)
         
-        table_tab.setLayout(table_layout)
-        self.tab_widget.addTab(table_tab, "Sequence")
+        # Create container for JSON view
+        json_container = QWidget()
+        json_layout = QVBoxLayout(json_container)
+        json_layout.setContentsMargins(0, 0, 0, 0)
+        json_layout.setSpacing(0)
+        
+        # JSON display
+        self.json_display = QTextEdit()
+        self.json_display.setReadOnly(True)
+        self.json_display.setFont(QFont("Courier New", 10))
+        json_layout.addWidget(self.json_display)
+        
+        # Add both containers to the stack
+        self.sequence_stack.addWidget(table_container)  # Index 0 - Table View
+        self.sequence_stack.addWidget(json_container)   # Index 1 - JSON View
+        
+        # Add the stack to the sequence layout
+        sequence_layout.addWidget(self.sequence_stack)
+        
+        # Add the sequence tab
+        self.tab_widget.addTab(sequence_tab, "Sequence")
         
         # Parameters tab
         params_tab = QWidget()
@@ -123,24 +170,6 @@ class CollapsibleSidebar(QWidget):
         
         params_tab.setLayout(params_layout)
         self.tab_widget.addTab(params_tab, "Parameters")
-        
-        # JSON view tab
-        json_tab = QWidget()
-        json_layout = QVBoxLayout()
-        
-        # JSON label
-        json_label = QLabel("JSON Representation")
-        json_label.setFont(QFont("Arial", 12, QFont.Bold))
-        json_layout.addWidget(json_label)
-        
-        # JSON display
-        self.json_display = QTextEdit()
-        self.json_display.setReadOnly(True)
-        self.json_display.setFont(QFont("Courier New", 10))
-        json_layout.addWidget(self.json_display)
-        
-        json_tab.setLayout(json_layout)
-        self.tab_widget.addTab(json_tab, "JSON")
         
         # Specifications tab placeholder - will be populated from MainWindow
         self.specs_tab = QWidget()
@@ -252,6 +281,9 @@ class CollapsibleSidebar(QWidget):
         if self.is_collapsed:
             self.toggle_collapsed()
         
+        # Remember current view
+        current_view = self.view_selector.currentIndex()
+        
         # Display in table
         try:
             df = pd.DataFrame(sequence.rows)
@@ -303,6 +335,9 @@ class CollapsibleSidebar(QWidget):
         if hasattr(self, 'save_template_btn'):
             self.save_template_btn.setEnabled(True)
         
+        # Restore the current view
+        self.sequence_stack.setCurrentIndex(current_view)
+        
         # Switch to sequence tab
         self.tab_widget.setCurrentIndex(0)
         print("DEBUG: Switched to sequence tab")
@@ -317,6 +352,10 @@ class CollapsibleSidebar(QWidget):
         
         # Clear JSON display
         self.json_display.clear()
+        
+        # Set default view to Table
+        self.view_selector.setCurrentIndex(0)
+        self.sequence_stack.setCurrentIndex(0)
         
         # Clear current sequence
         self.current_sequence = None
@@ -337,6 +376,9 @@ class CollapsibleSidebar(QWidget):
         # Get selected format
         format_name = self.format_combo.currentText()
         file_extension = FILE_FORMATS.get(format_name, ".csv")
+        
+        # Debug print to verify format and extension
+        print(f"Exporting with format: {format_name}, extension: {file_extension}")
         
         # Get file name from user
         file_name, _ = QFileDialog.getSaveFileName(
@@ -464,4 +506,15 @@ class CollapsibleSidebar(QWidget):
         self.specs_layout.addWidget(specs_panel)
         
         # Switch to the specifications tab (optional)
-        self.tab_widget.setCurrentWidget(self.specs_tab) 
+        self.tab_widget.setCurrentWidget(self.specs_tab)
+
+    def on_view_selector_changed(self):
+        """Handle view selector changes."""
+        # Get current index
+        current_index = self.view_selector.currentIndex()
+        
+        # Show the selected view
+        self.sequence_stack.setCurrentIndex(current_index)
+        
+        # Debug print
+        print(f"Changed view to: {self.view_selector.currentText()}") 

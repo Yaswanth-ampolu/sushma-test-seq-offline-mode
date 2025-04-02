@@ -11,7 +11,7 @@ import logging
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QToolButton, 
                            QFrame, QSizePolicy, QApplication, QFileDialog, QMessageBox,
                            QPushButton, QLabel, QTabWidget, QTextEdit, QHeaderView, QTableView,
-                           QGroupBox, QComboBox, QMenu, QAction, QGraphicsOpacityEffect)
+                           QGroupBox, QComboBox, QMenu, QAction, QGraphicsOpacityEffect, QStackedWidget)
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 from PyQt5.QtCore import (Qt, QUrl, pyqtSignal, pyqtSlot, QSize, QPropertyAnimation,
                         QEasingCurve, QObject, pyqtProperty, QTimer)
@@ -153,33 +153,82 @@ class WebEngineSidebar(QWidget):
         self.tab_widget.setTabPosition(QTabWidget.North)
         self.tab_widget.setObjectName("SidebarTabWidget")
         
-        # SEQUENCE TAB - Streamlined
+        # COMBINED SEQUENCE TAB - Streamlined
         sequence_tab = QWidget()
         sequence_layout = QVBoxLayout(sequence_tab)
         sequence_layout.setContentsMargins(3, 3, 3, 3)  # Compact margins
         sequence_layout.setSpacing(2)  # Minimal spacing
         
+        # Header with title and view selector
+        header_layout = QHBoxLayout()
+        
         # Table header - smaller and less prominent
         sequence_title = QLabel("Generated Test Sequence")
         sequence_title.setFont(QFont("Arial", 10))  # Reduced size, no bold
-        sequence_title.setAlignment(Qt.AlignCenter)
-        sequence_title.setStyleSheet("color: #666; margin-bottom: 2px;")  # Subtle styling
+        sequence_title.setAlignment(Qt.AlignLeft)
+        sequence_title.setStyleSheet("color: #666;")  # Subtle styling
         sequence_title.setMaximumHeight(20)  # Limit height
-        sequence_layout.addWidget(sequence_title)
+        header_layout.addWidget(sequence_title)
+        
+        # Add view selector dropdown
+        header_layout.addStretch()
+        view_selector_label = QLabel("View:")
+        view_selector_label.setStyleSheet("color: #666;")
+        header_layout.addWidget(view_selector_label)
+        
+        self.view_selector = QComboBox()
+        self.view_selector.addItem("Table")
+        self.view_selector.addItem("JSON")
+        self.view_selector.setFixedWidth(80)
+        self.view_selector.setStyleSheet("QComboBox { height: 20px; }")
+        self.view_selector.currentIndexChanged.connect(self.on_view_selector_changed)
+        header_layout.addWidget(self.view_selector)
+        
+        sequence_layout.addLayout(header_layout)
+        
+        # Create stacked widget to hold both views
+        self.sequence_stack = QStackedWidget()
+        
+        # Create container for table view
+        table_container = QWidget()
+        table_layout = QVBoxLayout(table_container)
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.setSpacing(0)
         
         # Add webview for results
         self.sequences_web_view = QWebEngineView()
         self.sequences_web_view.page().settings().setAttribute(QWebEngineSettings.ShowScrollBars, True)
         self.sequences_web_view.page().setBackgroundColor(QColor(245, 245, 247))
-        sequence_layout.addWidget(self.sequences_web_view)
+        table_layout.addWidget(self.sequences_web_view)
         
         # Also add a standard table view (initially hidden) as fallback
         self.results_table = QTableView()
         self.results_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.results_table.setSortingEnabled(True)
         self.results_table.hide()  # Hidden by default
-        sequence_layout.addWidget(self.results_table)
+        table_layout.addWidget(self.results_table)
         
+        # Create container for JSON view
+        json_container = QWidget()
+        json_layout = QVBoxLayout(json_container)
+        json_layout.setContentsMargins(0, 0, 0, 0)
+        json_layout.setSpacing(0)
+        
+        # JSON display
+        self.json_display = QTextEdit()
+        self.json_display.setReadOnly(True)
+        self.json_display.setFont(QFont("Courier New", 10))
+        self.json_display.setStyleSheet("QTextEdit { background-color: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; }")
+        json_layout.addWidget(self.json_display)
+        
+        # Add both containers to the stack
+        self.sequence_stack.addWidget(table_container)  # Index 0 - Table View
+        self.sequence_stack.addWidget(json_container)   # Index 1 - JSON View
+        
+        # Add the stack to the sequence layout
+        sequence_layout.addWidget(self.sequence_stack)
+        
+        # Add the sequence tab
         self.tab_widget.addTab(sequence_tab, "Sequence")
         
         # PARAMETERS TAB - Streamlined
@@ -195,21 +244,6 @@ class WebEngineSidebar(QWidget):
         params_layout.addWidget(self.parameters_display)
         
         self.tab_widget.addTab(params_tab, "Parameters")
-        
-        # JSON TAB - Streamlined
-        json_tab = QWidget()
-        json_layout = QVBoxLayout(json_tab)
-        json_layout.setContentsMargins(3, 3, 3, 3)
-        json_layout.setSpacing(2)
-        
-        # JSON display
-        self.json_display = QTextEdit()
-        self.json_display.setReadOnly(True)
-        self.json_display.setFont(QFont("Courier New", 10))
-        self.json_display.setStyleSheet("QTextEdit { background-color: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; }")
-        json_layout.addWidget(self.json_display)
-        
-        self.tab_widget.addTab(json_tab, "JSON")
         
         # SPECIFICATIONS TAB - Streamlined
         self.specs_tab = QWidget()
@@ -427,8 +461,15 @@ class WebEngineSidebar(QWidget):
         </html>
         """
         
-        # Set the HTML content
+        # Set the HTML content for table view
         self.sequences_web_view.setHtml(html)
+        
+        # Clear JSON display
+        self.json_display.setText("// No test sequence data available.\n// Generate a new test sequence to see JSON data.")
+        
+        # Set default view to Table
+        self.view_selector.setCurrentIndex(0)
+        self.sequence_stack.setCurrentIndex(0)
     
     def toggle_collapsed(self):
         """Toggle collapsed state with enhanced animations."""
@@ -552,6 +593,9 @@ class WebEngineSidebar(QWidget):
         # If the sidebar is collapsed, expand it
         if self.is_collapsed:
             self.toggle_collapsed()
+        
+        # Remember current view
+        current_view = self.view_selector.currentIndex()
         
         # Display in table (for backward compatibility)
         try:
@@ -734,12 +778,7 @@ class WebEngineSidebar(QWidget):
                                     cls = 'null';
                                 }}
                                 
-                                // Add appropriate styling
-                                if (cls === 'key') {{
-                                    return '<span class="' + cls + '">' + match.replace(/:$/, '') + '</span>:';
-                                }} else {{
-                                    return '<span class="' + cls + '">' + match + '</span>';
-                                }}
+                                return '<span class="' + cls + '">' + match + '</span>';
                             }});
                         
                         jsonElement.innerHTML = highlighted;
@@ -750,7 +789,7 @@ class WebEngineSidebar(QWidget):
             """
             
             self.json_display.setHtml(json_html)
-            logger.debug("Updated JSON display with syntax highlighting")
+            logger.debug("Updated JSON display")
         except Exception as e:
             logger.error("Failed to update JSON display: %s", str(e))
         
@@ -759,6 +798,9 @@ class WebEngineSidebar(QWidget):
             self.export_btn.setEnabled(True)
         if hasattr(self, 'save_template_btn'):
             self.save_template_btn.setEnabled(True)
+        
+        # Restore the current view
+        self.sequence_stack.setCurrentIndex(current_view)
         
         # Switch to sequence tab
         self.tab_widget.setCurrentIndex(0)
@@ -1000,6 +1042,9 @@ class WebEngineSidebar(QWidget):
         # Get selected format
         format_name = self.format_combo.currentText()
         file_extension = FILE_FORMATS.get(format_name, ".csv")
+        
+        # Debug print to verify format and extension
+        print(f"Exporting with format: {format_name}, extension: {file_extension}")
         
         # Get file name from user
         file_name, _ = QFileDialog.getSaveFileName(
@@ -1383,4 +1428,15 @@ class WebEngineSidebar(QWidget):
         # Set the HTML content and switch to specs tab
         self.specs_web_view.setHtml(html)
         self.specs_web_view.show()
-        self.tab_widget.setCurrentWidget(self.specs_tab) 
+        self.tab_widget.setCurrentWidget(self.specs_tab)
+
+    def on_view_selector_changed(self):
+        """Handle view selector changes."""
+        # Get current index
+        current_index = self.view_selector.currentIndex()
+        
+        # Show the selected view
+        self.sequence_stack.setCurrentIndex(current_index)
+        
+        # Log the change
+        logger.debug("Changed view to: %s", self.view_selector.currentText()) 

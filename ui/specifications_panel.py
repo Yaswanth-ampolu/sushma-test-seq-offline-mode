@@ -64,6 +64,7 @@ class SetPointWidget(QGroupBox):
         self.position_input = QDoubleSpinBox()
         self.position_input.setRange(0, 500)
         self.position_input.setValue(self.set_point.position_mm)
+        self.position_input.setSuffix(" mm")
         self.position_input.setDecimals(2)
         self.position_input.valueChanged.connect(self.on_position_changed)
         form_layout.addRow("Position:", self.position_input)
@@ -72,6 +73,7 @@ class SetPointWidget(QGroupBox):
         self.load_input = QDoubleSpinBox()
         self.load_input.setRange(0, 1000)
         self.load_input.setValue(self.set_point.load_n)
+        self.load_input.setSuffix(" N")
         self.load_input.setDecimals(2)
         self.load_input.valueChanged.connect(self.on_load_changed)
         form_layout.addRow("Load:", self.load_input)
@@ -182,6 +184,13 @@ class SpecificationsPanel(QWidget):
         self.settings_service = settings_service
         self.sequence_generator = sequence_generator
         self.chat_service = chat_service
+        self.current_specifications = SpringSpecification(
+            part_name="Demo Spring",
+            part_number="Demo Spring-1",
+            free_length_mm=58.0,
+            safety_limit_n=300.0
+        )
+        
         
         # Store specifications
         self.specifications = self.settings_service.get_spring_specification()
@@ -294,6 +303,7 @@ class SpecificationsPanel(QWidget):
         # Safety limit input moved to basic info
         self.safety_limit_input = QDoubleSpinBox()
         self.safety_limit_input.setRange(0, 10000)
+        self.safety_limit_input.setSuffix(" N")
         self.safety_limit_input.setDecimals(2)
         self.safety_limit_input.valueChanged.connect(self.on_basic_info_changed)
         basic_info_layout.addRow("Safety Limit:", self.safety_limit_input)
@@ -1593,3 +1603,25 @@ class SpecificationsPanel(QWidget):
             sp_widget.load_input.setSuffix(f" {force_unit}")
             
         print(f"Updated UI unit suffixes: displacement={disp_unit}, force={force_unit}") 
+    def get_current_specifications(self) -> SpringSpecification:
+        """Get the current specifications from the UI fields."""
+        try:
+            # Get values from UI fields
+            part_name = self.part_name_input.text()
+            part_number = self.part_number_input.text()
+            free_length = self.free_length_input.value()  # Assuming this is a QDoubleSpinBox
+            safety_limit = self.safety_limit_input.value()
+            
+            # Update current specifications
+            self.current_specifications = SpringSpecification(
+                part_name=part_name,
+                part_number=part_number,
+                free_length_mm=free_length,
+                safety_limit_n=safety_limit
+            )
+            
+            return self.current_specifications
+            
+        except Exception as e:
+            print(f"Error getting specifications: {str(e)}")
+            return self.current_specifications  # Return current/default specifications

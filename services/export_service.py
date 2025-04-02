@@ -6,7 +6,8 @@ import os
 import pandas as pd
 import json
 from typing import Dict, Any, Optional, List, Union, Tuple
-from models.data_models import TestSequence
+from models.data_models import TestSequence, SpringSpecification
+from utils.constants import FILE_FORMATS
 
 
 class ExportService:
@@ -18,7 +19,11 @@ class ExportService:
             "CSV": self._export_csv,
             "JSON": self._export_json,
             "Excel": self._export_excel,
+            "TXT": self._export_txt,  # Add TXT support
         }
+        # Print supported formats for debugging
+        print(f"ExportService initialized with formats: {list(self.supported_formats.keys())}")
+        print(f"FILE_FORMATS dictionary: {FILE_FORMATS}")
     
     def export_sequence(self, sequence: TestSequence, file_path: str, format_name: str = None) -> Tuple[bool, str]:
         """Export a sequence to a file.
@@ -36,13 +41,14 @@ class ExportService:
             _, ext = os.path.splitext(file_path)
             ext = ext.lower()
             
-            if ext == ".csv":
-                format_name = "CSV"
-            elif ext == ".json":
-                format_name = "JSON"
-            elif ext in [".xlsx", ".xls"]:
-                format_name = "Excel"
-            else:
+            # Use the FILE_FORMATS dictionary to find the corresponding format
+            format_name = None
+            for fmt, fmt_ext in FILE_FORMATS.items():
+                if fmt_ext.lower() == ext:
+                    format_name = fmt
+                    break
+            
+            if format_name is None:
                 return False, f"Unsupported file extension: {ext}"
         
         # Check if format is supported
@@ -147,6 +153,69 @@ class ExportService:
             return True, ""
         except Exception as e:
             return False, f"Excel export error: {str(e)}"
+    
+    def _export_txt(self, sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
+        """Export a sequence to TXT."""
+        try:
+            # Create DataFrame from sequence
+            df = pd.DataFrame(sequence.rows)
+            
+            with open(file_path, "w") as f:
+                # Get specifications from sequence parameters
+                specs = sequence.parameters.get("Specifications", {})
+                
+                # Initialize variables
+                part_name = ""       # Will be printed on Part Number line
+                part_number = ""     # Will be printed on Model Number line  
+                free_length = ""
+                test_mode = "Height"
+                safety_limit = "300"
+                
+                # Get values from specifications
+                if isinstance(specs, SpringSpecification):
+                    # Get values from SpringSpecification object
+                    part_name = specs.part_name if hasattr(specs, 'part_name') else ""
+                    part_number = specs.part_number if hasattr(specs, 'part_number') else ""
+                    free_length = str(specs.free_length_mm) if hasattr(specs, 'free_length_mm') else ""
+                    safety_limit = str(specs.safety_limit_n) if hasattr(specs, 'safety_limit_n') else "300"
+                    test_mode = specs.test_mode if hasattr(specs, 'test_mode') else "Height Mode"
+                elif isinstance(specs, dict):
+                    # Get values from dictionary
+                    part_name = str(specs.get('part_name', ''))
+                    part_number = str(specs.get('part_number', ''))
+                    free_length = str(specs.get('free_length_mm', ''))
+                    safety_limit = str(specs.get('safety_limit_n', '300'))
+                    test_mode = specs.get('test_mode', 'Height Mode')
+                
+                # Clean up values
+                part_name = '' if part_name in ('None', 'null', None) else str(part_name).strip()
+                part_number = '' if part_number in ('None', 'null', None) else str(part_number).strip()
+                free_length = '' if free_length in ('None', 'null', None) else str(free_length).strip()
+                safety_limit = '300' if safety_limit in ('None', 'null', None) else str(safety_limit).strip()
+                
+                # Extract first word of test mode (Height, Deflection, or Tension)
+                test_mode = test_mode.split()[0] if test_mode else "Height"
+                
+                # Write header with mapping from specification panel values
+                f.write(f"1    Part Number     --    {part_name}\n")        # Using part_name here
+                f.write(f"2    Model Number    --    {part_number}\n")      # Using part_number here  
+                f.write(f"3    Free Length     mm    {free_length}\n")      # Using free_length here
+                f.write(f"<Test Sequence> N          --    {test_mode} {safety_limit} 100\n\n")
+                
+                # Write sequence data
+                for index, row in df.iterrows():
+                    cmd = row.get('CMD', '')
+                    desc = row.get('Description', '')
+                    condition = row.get('Condition', '')
+                    unit = row.get('Unit', '')
+                    tolerance = row.get('Tolerance', '')
+                    
+                    row_str = f"R{index:02d}  {cmd:<6} {desc:<20} {condition:<10} {unit:<4} {tolerance:<20}\n"
+                    f.write(row_str)
+            
+            return True, ""
+        except Exception as e:
+            return False, f"TXT export error: {str(e)}"
     
     def get_supported_formats(self) -> List[str]:
         """Get the list of supported export formats.
@@ -284,4 +353,4 @@ class TemplateManager:
         Returns:
             Dictionary of template name -> TestSequence.
         """
-        return self.templates 
+        return self.templates
