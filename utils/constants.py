@@ -25,25 +25,6 @@ COMMANDS = {
     "PUi": "User Input"
 }
 
-# Standard speed values for different command types
-STANDARD_SPEEDS = {
-    "ZF": "50",         # Zero Force - slow speed for accuracy
-    "ZD": "50",         # Zero Displacement - slow speed for accuracy
-    "TH": "50",         # Threshold - slow speed for precision
-    "Mv(P)": "200",     # Move to Position - moderate to fast speed
-    "TD": "",           # Time Delay - no speed needed
-    "PMsg": "",         # User Message - no speed needed
-    "Fr(P)": "100",     # Force at Position - moderate speed
-    "FL(P)": "100",     # Free Length - moderate speed
-    "Scrag": "300",     # Scragging - fast speed for cycling
-    "SR": "100",        # Spring Rate - moderate speed
-    "PkF": "100",       # Peak Force - moderate speed
-    "PkP": "100",       # Peak Position - moderate speed
-    "Po(F)": "100",     # Position at Force - moderate speed
-    "Mv(F)": "200",     # Move to Force - moderate to fast speed
-    "default": "100"    # Default moderate speed
-}
-
 # API Configurations
 # Together.ai endpoint
 API_ENDPOINT = "https://api.together.xyz/v1/chat/completions"
@@ -52,8 +33,8 @@ DEFAULT_TEMPERATURE = 0.1
 
 # Ollama API configurations
 OLLAMA_API_ENDPOINT = "http://localhost:11434/api/chat"
-DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b"  # Default Ollama model
-DEFAULT_OLLAMA_TEMPERATURE = 0.1
+DEFAULT_OLLAMA_MODEL = "spring-assistant-complete"  # Updated to use our comprehensive model with Together.ai prompts
+DEFAULT_OLLAMA_TEMPERATURE = 0.5
 OLLAMA_MAX_RETRIES = 3
 
 # API Provider Options
@@ -78,21 +59,6 @@ FILE_FORMATS = {
     "Excel": ".xlsx"
 }
 
-# Parameter Patterns for text extraction
-PARAMETER_PATTERNS = {
-    "Free Length": r'free\s*length\s*(?:[=:]|is|of)?\s*(\d+\.?\d*)\s*(?:mm)?',
-    "Part Number": r'part\s*(?:number|#|no\.?)?\s*(?:[=:]|is)?\s*([A-Za-z0-9-_]+)',
-    "Model Number": r'model\s*(?:number|#|no\.?)?\s*(?:[=:]|is)?\s*([A-Za-z0-9-_]+)',
-    "Wire Diameter": r'wire\s*(?:diameter|thickness)?\s*(?:[=:]|is)?\s*(\d+\.?\d*)\s*(?:mm)?',
-    "Outer Diameter": r'(?:outer|outside)\s*diameter\s*(?:[=:]|is)?\s*(\d+\.?\d*)\s*(?:mm)?',
-    "Inner Diameter": r'(?:inner|inside)\s*diameter\s*(?:[=:]|is)?\s*(\d+\.?\d*)\s*(?:mm)?',
-    "Spring Rate": r'(?:spring|target)\s*rate\s*(?:[=:]|is)?\s*(\d+\.?\d*)',
-    "Test Load": r'(?:test|target)\s*load\s*(?:[=:]|is)?\s*(\d+\.?\d*)',
-    "Deflection": r'deflection\s*(?:[=:]|is)?\s*(\d+\.?\d*)',
-    "Working Length": r'working\s*length\s*(?:[=:]|is)?\s*(\d+\.?\d*)',
-    "Customer ID": r'customer\s*(?:id|number)?\s*(?:[=:]|is)?\s*([A-Za-z0-9\s]+)',
-}
-
 # System prompt template for API
 SYSTEM_PROMPT_TEMPLATE = """
 You are an expert AI assistant specialized in spring force testing systems, generating precise test sequences for engineers.
@@ -106,9 +72,6 @@ When the user is simply having a conversation, asking general questions, or not 
 SPECIFICATIONS CHECK (ONLY WHEN TEST SEQUENCES ARE REQUESTED):
 ONLY check for complete specifications when the user EXPLICITLY asks for a test sequence. When they do:
 - Free Length (mm)
-- Wire Diameter (mm)
-- Outer Diameter (mm)
-- Coil Count
 - Set Points (position and load values)
 
 If a test sequence is requested AND specifications are missing:
@@ -255,11 +218,24 @@ For general questions, respond naturally as a helpful assistant.
 
 # Simple user prompt template for Ollama
 OLLAMA_USER_PROMPT_TEMPLATE = """
+SPRING SPECIFICATIONS:
 {parameter_text}
 
+TEST TYPE:
 {test_type_text}
 
-My message: {prompt}
+IMPORTANT OUTPUT FORMAT:
+- If you're generating a test sequence, you MUST respond with ONLY a valid JSON array
+- Do NOT include any text explanations, markdown formatting, or any content outside of the JSON array
+- The array must contain items with these EXACT keys: "Row", "CMD", "Description", "Condition", "Unit", "Tolerance", "Speed rpm"
+
+REQUIRED FIELDS:
+- Free Length (REQUIRED): {free_length_value} mm
+- Set Points (REQUIRED): Available in the specifications
+- Component Type: Compression/Tension as specified
+
+USER REQUEST:
+{prompt}
 """
 
 # Default settings

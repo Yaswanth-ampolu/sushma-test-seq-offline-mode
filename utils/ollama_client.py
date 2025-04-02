@@ -52,8 +52,8 @@ def _get_current_provider():
 
 # Default Ollama settings
 OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
-DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b"
-DEFAULT_OLLAMA_TEMPERATURE = 0.1
+DEFAULT_OLLAMA_MODEL = "spring-assistant-complete"  # Updated to use our comprehensive model with Together.ai prompts
+DEFAULT_OLLAMA_TEMPERATURE = 0.5
 MAX_RETRIES = 3
 
 # Helper functions for formatting and extracting data
@@ -182,6 +182,9 @@ class OllamaAPIClientWorker(QObject):
         # Get specifications status if provided
         specifications_status = self.parameters.get('specifications_status', 'No specification status provided')
         
+        # Extract free length value for template
+        free_length_value = self.parameters.get('Free Length', 'Not provided')
+        
         # Check if test_type is provided in parameters
         test_type_text = ""
         if "Test Type" in self.parameters:
@@ -190,28 +193,24 @@ class OllamaAPIClientWorker(QObject):
         
         # Get the appropriate prompt templates for the current provider
         # Use "ollama" directly since this is the Ollama client
-        system_prompt_template, user_prompt_template = get_prompt_templates("ollama")
+        _, user_prompt_template = get_prompt_templates("ollama")
         
         # Use the appropriate user prompt template
         user_prompt = user_prompt_template.format(
             parameter_text=parameter_text,
             test_type_text=test_type_text,
-            prompt=original_prompt
+            prompt=original_prompt,
+            free_length_value=free_length_value
         )
         
         # Include previous context if available
         if self.api_client.chat_memory:
             user_prompt += "\n\nPrevious context:\n" + "\n".join(self.api_client.chat_memory[-3:])
         
-        # Format the system prompt with specifications status
-        system_prompt = system_prompt_template.format(
-            specifications_status=specifications_status
-        )
-        
-        # Create payload for Ollama API
+        # Create payload for Ollama API - NO SYSTEM PROMPT since it's embedded in the model
         payload = {
-            "model": self.model,
-            "prompt": f"{system_prompt}\n\n{user_prompt}",
+            "model": self.model,  # Use the model passed in initialization instead of hardcoded value
+            "prompt": user_prompt,
             "stream": False,
             "options": {
                 "temperature": self.temperature
