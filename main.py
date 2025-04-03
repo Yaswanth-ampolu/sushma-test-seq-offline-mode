@@ -27,19 +27,33 @@ from ui.styles import apply_theme
 
 def setup_logging():
     """Set up logging configuration."""
+    # Use the directory where the script is located instead of current working directory
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    logs_dir = os.path.join(base_dir, "logs")
+    
     # Create logs directory if it doesn't exist
-    if not os.path.exists("logs"):
-        os.makedirs("logs")
+    if not os.path.exists(logs_dir):
+        try:
+            os.makedirs(logs_dir)
+        except PermissionError:
+            # Fallback to user's temp directory if we can't write to app directory
+            import tempfile
+            logs_dir = os.path.join(tempfile.gettempdir(), "SpringTestApp", "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+    
+    log_file = os.path.join(logs_dir, "app.log")
     
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
-            logging.FileHandler("logs/app.log"),
+            logging.FileHandler(log_file),
             logging.StreamHandler(sys.stdout)
         ]
     )
+    
+    logging.info(f"Logging to: {log_file}")
 
 
 def parse_arguments():

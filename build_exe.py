@@ -61,7 +61,8 @@ def build_exe(one_file=False, console=False, clean=False):
         "ui",
         "utils",
         "models",
-        "services"
+        "services",
+        "logs"  # Add logs directory
     ]
     
     for dir_name in data_dirs:
