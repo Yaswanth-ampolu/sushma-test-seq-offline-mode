@@ -100,14 +100,45 @@ def main():
     if args.reset_specs:
         logging.info("Completely resetting spring specifications and clearing all set points")
         
-        # Create default spring specification with no default set points
-        default_spec = SpringSpecification(create_defaults=False)
+        # Create default spring specification with ALL fields explicitly reset
+        default_spec = SpringSpecification(
+            part_name="",
+            part_number="",
+            part_id=0,
+            free_length_mm=0.0,
+            coil_count=0.0,
+            wire_dia_mm=0.0,
+            outer_dia_mm=0.0,
+            set_points=[],
+            safety_limit_n=0.0,
+            unit="mm",
+            enabled=False,
+            create_defaults=False,
+            force_unit="N",
+            test_mode="Height Mode",
+            component_type="Compression",
+            first_speed=0.0,
+            second_speed=0.0,
+            offer_number="",
+            production_batch_number="",
+            part_rev_no_date="",
+            material_description="",
+            surface_treatment="",
+            end_coil_finishing=""
+        )
         
         # Log confirmation
-        logging.info("Created new specification with no set points")
+        logging.info("Created new specification with all fields explicitly reset")
             
         # Set the specification in settings service
-        settings_service.set_spring_specification(default_spec)
+        success = settings_service.set_spring_specification(default_spec)
+        
+        if success:
+            logging.info("Successfully reset specifications")
+            # Completely reset the settings service state
+            settings_service.reset_settings_state()
+        else:
+            logging.error("Failed to reset specifications")
     
     # Get API key from settings
     api_key = settings_service.get_api_key()

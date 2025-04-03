@@ -29,8 +29,8 @@ class ChatPanel(QWidget):
         """Initialize the chat panel.
         
         Args:
-            chat_service: Chat service.
-            sequence_generator: Sequence generator service.
+            chat_service: Chat service for managing chat history.
+            sequence_generator: Sequence generator for generating test sequences.
         """
         super().__init__()
         
@@ -41,8 +41,8 @@ class ChatPanel(QWidget):
         self.chat_service = chat_service
         self.sequence_generator = sequence_generator
         
-        # Get the settings service from chat service
-        self.settings_service = self.chat_service.settings_service
+        # Get settings service from chat service instead of sequence generator
+        self.settings_service = chat_service.settings_service
         
         # State variables
         self.is_generating = False
@@ -50,6 +50,7 @@ class ChatPanel(QWidget):
         # Create and store the specification form manager
         self.spec_form_manager = None  # Will be created when needed
         self.spec_form_active = False  # Track whether form is active
+        self.form_recently_cancelled = False
         
         # Set up the UI
         self.init_ui()
@@ -59,6 +60,9 @@ class ChatPanel(QWidget):
         
         # Load chat history
         self.refresh_chat_display()
+        
+        # Initialize loading timer
+        self.loading_timer = QTimer(self)
     
     def init_ui(self):
         """Initialize the UI."""
@@ -437,303 +441,47 @@ class ChatPanel(QWidget):
         self.chat_display.refresh_display(history)
     
     def on_send_clicked(self):
-        """Handle send button clicks (for both chat and generation)."""
-        # Get user input
-        user_input = self.user_input.toPlainText()
+        """Handle send button clicks."""
+        # Get text from input
+        user_input = self.user_input.toPlainText().strip()
         
         # Check if input is empty
         if not user_input:
-            QMessageBox.warning(self, "Missing Input", "Please enter your request.")
             return
         
-        # Check if generation is already in progress
-        if self.is_generating:
-            QMessageBox.warning(self, "Processing", "Please wait for the current request to complete.")
-            return
-        
-        # Add user message to chat history
-        self.chat_service.add_message("user", user_input)
-        
-        # Clear the input field immediately after sending
+        # Clear input
         self.user_input.clear()
         
-        # Refresh chat display
-        self.refresh_chat_display()
+        # Check API key
+        if not self.validate_api_key():
+            return
         
-        # Check if this is a request to update specifications
+        # Check if this might be a specification update request
         if self._is_spec_update_request(user_input):
+            # Handle specification update request
             self._handle_spec_update_request()
             return
         
-        # Check if the message contains sequence data markers
-        sequence_data_start = "---SEQUENCE_DATA_START---"
-        sequence_data_end = "---SEQUENCE_DATA_END---"
+        # Add message to chat
+        self.chat_service.add_message("user", user_input)
         
-        if sequence_data_start in user_input and sequence_data_end in user_input:
-            # Direct input contains sequence data - process it directly
-            try:
-                # Extract parts
-                parts = user_input.split(sequence_data_start)
-                conversation_text = parts[0].strip()
-                
-                # Extract the sequence data
-                seq_parts = parts[1].split(sequence_data_end)
-                sequence_json_text = seq_parts[0].strip()
-                
-                # If there's additional text after the sequence data, add it to conversation
-                if len(seq_parts) > 1 and seq_parts[1].strip():
-                    conversation_text += "\n\n" + seq_parts[1].strip()
-                
-                # Add the conversation text to chat
-                self.chat_service.add_message("assistant", conversation_text)
-                self.refresh_chat_display()
-                
-                # Parse the sequence data
-                import json
-                try:
-                    # First try standard JSON parsing
-                    data = json.loads(sequence_json_text)
-                except json.JSONDecodeError:
-                    # If that fails, try to convert the non-standard format to proper JSON
-                    # This handles formats like [R00, ZF, Zero Force, , , , ]
-                    try:
-                        # Convert the input to a format that can be parsed
-                        rows = []
-                        for line in sequence_json_text.strip().split('\n'):
-                            # Remove the brackets and parse cells
-                            line = line.strip()
-                            if line.startswith('[') and line.endswith(']'):
-                                # Remove the brackets
-                                line = line[1:-1]
-                                
-                                # Intelligently parse cells to handle commas within values
-                                cells = []
-                                current_cell = ""
-                                in_parentheses = False
-                                in_quotes = False
-                                cell_index = 0  # Track which cell position we're in
-                                found_scrag_cmd = False  # Flag to track if we've seen "Scrag" in the CMD position
-                                
-                                for char in line:
-                                    if char == '"' and (len(current_cell) == 0 or current_cell[-1] != '\\'):
-                                        # Toggle quote state (but not if escaped)
-                                        in_quotes = not in_quotes
-                                        current_cell += char
-                                    elif char == '(' or char == '[':
-                                        in_parentheses = True
-                                        current_cell += char
-                                    elif char == ')' or char == ']':
-                                        in_parentheses = False
-                                        current_cell += char
-                                    elif char == ',' and not (in_parentheses or in_quotes):
-                                        # Process the completed cell before deciding what to do with the comma
-                                        completed_cell = current_cell.strip()
-                                        
-                                        # Check if we just processed the CMD cell and it's a Scrag command
-                                        if cell_index == 1 and completed_cell == "Scrag":
-                                            found_scrag_cmd = True
-                                            print(f"DEBUG: Found Scrag command in CMD position")
-                                        
-                                        # Special case for Scrag command format "Rxx,y" in the Condition field (4th column)
-                                        if (found_scrag_cmd and cell_index == 3 and 
-                                            completed_cell and 
-                                            (re.match(r'^"?R\d+$', completed_cell) or  # Pattern is "R" followed by digits (like R03)
-                                             re.match(r'^"?R\d+,\d*"?$', completed_cell))):  # Pattern already has comma (like R03,2)
-                                            # This is a reference to another row in Scrag command, keep it intact
-                                            current_cell += char
-                                            print(f"DEBUG: Keeping comma in Scrag condition: {current_cell}")
-                                            # Check if this is the second comma for Scrag
-                                            if re.match(r'^"?R\d+,\d+$', current_cell.strip()):
-                                                # We've already got the full R03,2 pattern, next comma should be a separator
-                                                cells.append(current_cell.strip())
-                                                current_cell = ""
-                                                cell_index += 1
-                                        else:
-                                            # This comma is a cell separator
-                                            cells.append(completed_cell)
-                                            current_cell = ""
-                                            cell_index += 1
-                                    else:
-                                        # This character is part of the current cell
-                                        current_cell += char
-                                
-                                # Add the last cell
-                                cells.append(current_cell.strip())
-                                
-                                # Remove quotes around cells if present
-                                for i in range(len(cells)):
-                                    if cells[i].startswith('"') and cells[i].endswith('"'):
-                                        cells[i] = cells[i][1:-1]
-                                    # Also clean up any trailing commas from Scrag commands
-                                    if cells[i].endswith(","):
-                                        cells[i] = cells[i][:-1]
-                                
-                                # Make sure we have exactly 7 cells for the expected columns
-                                while len(cells) < 7:
-                                    cells.append("")
-                                
-                                # If we have too many cells, combine the extras into the appropriate column
-                                if len(cells) > 7:
-                                    print(f"WARNING: Found {len(cells)} cells, expected 7. Combining extras.")
-                                    # Keep the first 6 cells as-is and combine the remaining cells into the last column
-                                    cells = cells[:6] + [", ".join(cells[6:])]
-                                
-                                # Create a row with the proper column names
-                                row = {
-                                    "Row": cells[0] if cells[0] else "",
-                                    "CMD": cells[1] if cells[1] else "",
-                                    "Description": cells[2] if cells[2] else "",
-                                    "Condition": cells[3] if cells[3] else "",
-                                    "Unit": cells[4] if cells[4] else "",
-                                    "Tolerance": cells[5] if cells[5] else "",
-                                    "Speed rpm": cells[6] if cells[6] else ""
-                                }
-                                rows.append(row)
-                        
-                        # Use the manually parsed data
-                        data = rows
-                        print(f"DEBUG: Manually parsed {len(data)} rows from custom format")
-                        if not data:
-                            raise ValueError("No valid sequence data found")
-                    except Exception as e:
-                        # If manual parsing also fails, report the error
-                        self.chat_service.add_message(
-                            "assistant", 
-                            f"I couldn't parse the sequence data format: {str(e)}\n\n" +
-                            "Please ensure the sequence data is properly formatted."
-                        )
-                        self.refresh_chat_display()
-                        return
-                
-                # Create DataFrame from sequence data
-                df = pd.DataFrame(data)
-                
-                # Ensure all required columns are present
-                required_columns = ["Row", "CMD", "Description", "Condition", "Unit", "Tolerance", "Speed rpm"]
-                
-                # Fix column names - handle both "Cmd" and "CMD" variations
-                if "Cmd" in df.columns and "CMD" not in df.columns:
-                    df = df.rename(columns={"Cmd": "CMD"})
-                
-                # Rename any mismatched columns
-                if "Speed" in df.columns and "Speed rpm" not in df.columns:
-                    df = df.rename(columns={"Speed": "Speed rpm"})
-                    
-                # Add any missing columns
-                for col in required_columns:
-                    if col not in df.columns:
-                        df[col] = ""
-                
-                # Reorder columns to match required format
-                df = df[required_columns]
-                
-                # Create parameters dictionary
-                parameters = {
-                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "prompt": "Generated sequence"
-                }
-                
-                # Create a TestSequence object
-                test_sequence = TestSequence(
-                    rows=df.to_dict('records'),
-                    parameters=parameters
-                )
-                
-                # Emit the sequence to display in sidebar
-                print(f"DEBUG: Emitting sequence with {len(test_sequence.rows)} rows to sidebar")
-                self.sequence_generated.emit(test_sequence)
-                return
-                
-            except (json.JSONDecodeError, ValueError) as e:
-                # If parsing fails, add error message and proceed with normal processing
-                self.chat_service.add_message(
-                    "assistant", 
-                    f"I couldn't parse the sequence data in your message: {str(e)}"
-                )
-                self.refresh_chat_display()
-                # Continue with normal processing
-        
-        # Create parameters dictionary using timestamp and original prompt
-        parameters = {
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "prompt": user_input
-        }
-        
-        # Get current API provider from settings for appropriate messaging
-        current_provider = "FTS.ai"  # Default
-        try:
-            from utils.settings import get_api_provider
-            provider_key = get_api_provider()
-            if provider_key == "ollama":
-                current_provider = "Ollama"
-            else:
-                current_provider = "FTS.ai"
-        except:
-            # If there's any error, use generic message
-            current_provider = "AI"
-        
-        # Add a processing message 
-        processing_msg = f"Processing your message with {current_provider}..."
+        # Add a placeholder for the assistant's response
         self.chat_service.add_message(
-            "assistant",
-            processing_msg
+            "assistant", 
+            "Processing your message with FTS.ai..."
         )
         self.refresh_chat_display()
         
-        # Make sure the processing message is visible immediately
-        QApplication.processEvents()
+        # Prepare parameters
+        parameters = {
+            'prompt': user_input
+        }
         
-        # Check if the input contains spring specifications and parse them
-        contains_specs = self.parse_spring_specs(user_input)
+        # Get current spring specification to include in parameters
+        spring_spec = self.sequence_generator.get_spring_specification()
         
-        # If specs were parsed, update the sequence generator
-        if contains_specs:
-            # Get the updated specification and set it in the sequence generator
-            updated_spec = self.settings_service.get_spring_specification()
-            self.sequence_generator.set_spring_specification(updated_spec)
-            
-            # Add a note to the chat about using the parsed specifications
-            self.chat_service.add_message(
-                "assistant",
-                "I've updated the spring specifications based on your message."
-            )
-            self.refresh_chat_display()
-        
-        # If this might be a request for a test sequence, include specification status
-        # Use a simple keyword detection approach to predict if this is a test sequence request
-        test_sequence_keywords = ["sequence", "test", "generate", "spring", "specification", "create test", 
-                                  "spring test", "compression test", "tension test", "make a", "scragging", 
-                                  "setup", "create a sequence", "coil", "load", "force"]
-        
-        # Count how many test-related keywords appear in the user input
-        keyword_count = sum(1 for keyword in test_sequence_keywords if keyword.lower() in user_input.lower())
-        
-        # If there are multiple test-related keywords, or the user explicitly mentions test sequence,
-        # include the specification status in the parameters
-        is_likely_test_request = keyword_count >= 2 or any(phrase in user_input.lower() for phrase in 
-                                                          ["test sequence", "spring test", "generate sequence"])
-        
-        if is_likely_test_request:
-            # Get current spring specification to check its status
-            spring_spec = self.sequence_generator.get_spring_specification()
-            
-            # Check if specifications are properly set up
-            if not spring_spec or not spring_spec.enabled:
-                # Remove the processing message
-                self.chat_service.history.pop()
-                
-                # Show a message asking to set up specifications
-                self.chat_service.add_message(
-                    "assistant",
-                    "Before I can generate a test sequence, you need to set up your spring specifications. "
-                    "Would you like to do that now using a form?"
-                )
-                self.refresh_chat_display()
-                
-                # Show the specification form
-                self.show_specification_form()
-                return
-            
+        # If specifications exist, include them in parameters
+        if spring_spec:
             # Generate the specification status text for the AI
             specifications_status = self.generate_specification_status(spring_spec)
             
@@ -741,11 +489,12 @@ class ChatPanel(QWidget):
             parameters["specifications_status"] = specifications_status
             
             # Include spring specification in the prompt if available
-            if spring_spec:
-                # Add specification text to the prompt if not already included
-                spec_text = spring_spec.to_prompt_text()
-                if spec_text not in parameters['prompt']:
-                    parameters['prompt'] = f"{spec_text}\n\n{parameters['prompt']}"
+            spec_text = spring_spec.to_prompt_text()
+            if spec_text not in parameters['prompt']:
+                parameters['prompt'] = f"{spec_text}\n\n{parameters['prompt']}"
+        else:
+            # No specifications are set up yet
+            parameters["specifications_status"] = "No specifications are currently set up."
         
         # Start generation
         self.start_generation(parameters)
@@ -861,6 +610,12 @@ class ChatPanel(QWidget):
             # If we have chat content, display it in the chat panel
             if not chat_rows.empty:
                 chat_message = chat_rows["Description"].values[0]
+                
+                # Check if the message contains the special command pattern
+                if self._check_and_handle_special_commands(chat_message):
+                    # Special command was detected and handled
+                    return
+                
                 self.chat_service.add_message("assistant", chat_message)
                 
                 # Force refresh chat display to ensure message appears
@@ -1317,12 +1072,19 @@ class ChatPanel(QWidget):
         # Hide the form
         self.hide_specification_form()
         
+        # Set a flag to prevent immediate re-suggestion of the form
+        self.form_recently_cancelled = True
+        print("DEBUG: Form was cancelled by user, setting form_recently_cancelled flag")
+        
         # Add message to chat history
         self.chat_service.add_message(
             "assistant", 
-            "Specification update was cancelled. You can try again or continue with the current specifications."
+            "Specification update was cancelled. If you'd like to try again later, just let me know."
         )
         self.refresh_chat_display()
+        
+        # Schedule the flag to be reset after a delay (10 seconds)
+        QTimer.singleShot(10000, self.reset_form_cancelled_flag)
     
     def _process_form_data(self, form_data):
         """Process the collected form data and update specifications.
@@ -1609,26 +1371,21 @@ class ChatPanel(QWidget):
         Returns:
             True if it's a request to update specifications, False otherwise
         """
-        # First check for direct mentions of the form or updating specifications
-        if any(phrase in user_input.lower() for phrase in [
-            "edit specification", "update specification", "edit spec", "update spec",
-            "change spec", "fill specification", "specification form", "spec form",
-            "update spring", "edit spring", "create spring", "define spring",
-            "enter specification", "enter spec", "input spec"
-        ]):
-            return True
-            
-        # If the user is asking for a test sequence but specifications are not enabled,
-        # we'll also offer the form as an option
-        if any(phrase in user_input.lower() for phrase in [
-            "test sequence", "generate sequence", "create sequence", "make sequence",
-            "spring test", "compression test", "tension test"
-        ]):
-            # Check if specifications are enabled
-            spring_spec = self.settings_service.get_spring_specification()
-            if not spring_spec or not spring_spec.enabled:
+        # ONLY detect explicit mentions of setting up specifications
+        explicit_phrases = [
+            "create specification", "setup specification", "setup spring specification",
+            "open specification form", "create spec form", "open spec form",
+            "set up specifications", "enter specifications", "input specifications",
+            "create spring spec", "i want to set up specifications", "help me setup specifications"
+        ]
+        
+        # Check for direct, explicit mentions only
+        for phrase in explicit_phrases:
+            if phrase in user_input.lower():
                 return True
                 
+        # Don't trigger for questions about specs or general mentions
+        # This is a deliberate limitation to prevent false positives
         return False
         
     def _handle_spec_update_request(self):
@@ -1688,6 +1445,112 @@ class ChatPanel(QWidget):
         # Refresh the display
         self.refresh_chat_display()
     
+    def _check_and_handle_special_commands(self, message):
+        """Check for and handle special command patterns in the AI's message.
+        
+        Args:
+            message: The AI's response message
+            
+        Returns:
+            bool: True if a special command was detected and handled, False otherwise
+        """
+        # If form was recently cancelled, ignore form commands for a while
+        if self.form_recently_cancelled:
+            print("DEBUG: Ignoring form command because form was recently cancelled")
+            # Modify the message to remove the command
+            clean_message = message
+            for cmd in ["[[OPEN_SPEC_FORM]]", "[[OPEN SPEC FORM]]", "<<OPEN_SPEC_FORM>>", "<<OPEN SPEC FORM>>"]:
+                clean_message = clean_message.replace(cmd, "")
+                
+            # Also check HTML escaped versions
+            for cmd in ["&lt;&lt;OPEN_SPEC_FORM&gt;&gt;", "&lt;&lt;OPEN SPEC FORM&gt;&gt;"]:
+                clean_message = clean_message.replace(cmd, "")
+                
+            # Return False to indicate no special command was handled
+            # But still clean the message
+            if clean_message != message:
+                print("DEBUG: Removed form command from message due to recent cancellation")
+                self.chat_service.add_message("assistant", clean_message.strip())
+                self.refresh_chat_display()
+                return True
+            
+            return False
+            
+        # Check for all possible form opening command variations
+        form_commands = [
+            "[[OPEN_SPEC_FORM]]",
+            "[[OPEN SPEC FORM]]",
+            "[[OPEN_SPECIFICATION_FORM]]",
+            "[[OPEN SPECIFICATION FORM]]",
+            "[[OPEN-SPEC-FORM]]",
+            "<<OPEN_SPEC_FORM>>",
+            "<<OPEN SPEC FORM>>"
+        ]
+        
+        # HTML-escaped versions (for when message goes through formatter)
+        html_escaped_commands = [
+            "&lt;&lt;OPEN_SPEC_FORM&gt;&gt;",
+            "&lt;&lt;OPEN SPEC FORM&gt;&gt;",
+            "&lt;&lt;OPEN_SPECIFICATION_FORM&gt;&gt;",
+            "&lt;&lt;OPEN SPECIFICATION FORM&gt;&gt;",
+            "&lt;&lt;OPEN-SPEC-FORM&gt;&gt;"
+        ]
+        
+        # Check if any of the commands are in the message
+        detected = False
+        detected_command = None
+        
+        # Check regular commands
+        for cmd in form_commands:
+            if cmd in message:
+                detected = True
+                detected_command = cmd
+                break
+                
+        # Check HTML-escaped commands if not found
+        if not detected:
+            for cmd in html_escaped_commands:
+                if cmd in message:
+                    detected = True
+                    detected_command = cmd
+                    break
+        
+        if detected:
+            print(f"DEBUG: Detected special command: {detected_command}")
+            
+            # Remove all possible command variations from the message
+            clean_message = message
+            for cmd in form_commands + html_escaped_commands:
+                clean_message = clean_message.replace(cmd, "")
+            
+            # Clean and trim the message
+            clean_message = clean_message.strip()
+            
+            # Add the cleaned message to chat history
+            self.chat_service.add_message("assistant", clean_message)
+            self.refresh_chat_display()
+            
+            # Force UI update before showing form
+            QApplication.processEvents()
+            
+            # Show the specification form with error handling
+            try:
+                print("DEBUG: About to show specification form")
+                self.show_specification_form()
+                print("DEBUG: Specification form shown successfully")
+                return True
+            except Exception as e:
+                print(f"ERROR: Failed to show specification form: {str(e)}")
+                # Add error message to chat
+                self.chat_service.add_message(
+                    "assistant",
+                    "I tried to open the specification form but encountered an error. Please try again or contact support."
+                )
+                self.refresh_chat_display()
+                return True
+            
+        return False
+    
     def eventFilter(self, obj, event):
         """Filter events to handle Ctrl+Enter shortcut in the text input.
         
@@ -1706,4 +1569,9 @@ class ChatPanel(QWidget):
                 return True
         
         # Let the base class handle the event
-        return super().eventFilter(obj, event) 
+        return super().eventFilter(obj, event)
+    
+    def reset_form_cancelled_flag(self):
+        """Reset the form cancelled flag after a delay."""
+        print("DEBUG: Resetting form_recently_cancelled flag")
+        self.form_recently_cancelled = False 

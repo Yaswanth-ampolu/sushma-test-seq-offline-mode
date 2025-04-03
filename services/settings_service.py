@@ -472,4 +472,28 @@ class SettingsService:
         self.set_spring_specification(spec)
         
         # Return the updated specification
-        return spec 
+        return spec
+    
+    def reset_settings_state(self):
+        """Completely reset the settings service's internal state.
+        
+        This method will clear all in-memory settings and reload them from disk.
+        """
+        logging.info("Completely resetting settings service internal state")
+        
+        # Clear all in-memory settings
+        self.settings = {
+            "api_key": "",
+            "theme": "light",
+            "spring_specification": None
+        }
+        
+        # Reload settings from disk
+        self.load_settings()
+        
+        # Ensure we have a spring specification
+        if "spring_specification" not in self.settings or self.settings["spring_specification"] is None:
+            logging.info("No spring specification found after reset, using empty default")
+            self.settings["spring_specification"] = SpringSpecification(create_defaults=False).to_dict()
+            
+        logging.info("Settings service state has been reset") 
