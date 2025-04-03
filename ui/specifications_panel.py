@@ -614,6 +614,9 @@ class SpecificationsPanel(QWidget):
         # Get specifications
         self.specifications = self.settings_service.get_spring_specification()
         
+        # Log what we're loading
+        print(f"Loading specifications: part_name='{self.specifications.part_name}', part_number='{self.specifications.part_number}', with {len(self.specifications.set_points)} set points")
+        
         # Set basic info values
         self.part_name_input.setText(self.specifications.part_name)
         self.part_number_input.setText(self.specifications.part_number)
@@ -1594,32 +1597,97 @@ class SpecificationsPanel(QWidget):
         )
         
         if confirmation == QMessageBox.Yes:
-            # Create a completely new default spring specification with NO set points
-            default_spec = SpringSpecification(create_defaults=False)
+            # Create a completely new default spring specification with ALL fields explicitly reset
+            default_spec = SpringSpecification(
+                part_name="",
+                part_number="",
+                part_id=0,
+                free_length_mm=0.0,
+                coil_count=0.0,
+                wire_dia_mm=0.0,
+                outer_dia_mm=0.0,
+                set_points=[],
+                safety_limit_n=0.0,
+                unit="mm",
+                enabled=False,
+                create_defaults=False,
+                force_unit="N",
+                test_mode="Height Mode",
+                component_type="Compression",
+                first_speed=0.0,
+                second_speed=0.0,
+                offer_number="",
+                production_batch_number="",
+                part_rev_no_date="",
+                material_description="",
+                surface_treatment="",
+                end_coil_finishing=""
+            )
             
-            print("Reset: Created new specification with empty set points")
+            print("Reset: Created new specification with all fields explicitly reset")
             
-            # Set it in the settings service
-            self.settings_service.set_spring_specification(default_spec)
+            # Step 1: First manually clear all UI fields to ensure they're reset
+            print("Manually clearing all UI fields")
+            self.part_name_input.clear()
+            self.part_number_input.clear()
+            self.part_id_input.clear()
+            self.free_length_input.setValue(0.0)
+            self.coil_count_input.setValue(0.0)
+            self.wire_dia_input.setValue(0.0)
+            self.outer_dia_input.setValue(0.0)
+            self.safety_limit_input.setValue(0.0)
+            self.unit_input.setCurrentText("mm")
+            self.force_unit_input.setCurrentText("N")
+            self.test_mode_input.setCurrentText("Height Mode")
+            self.component_type_input.setCurrentText("Compression")
+            self.first_speed_input.setValue(0.0)
+            self.second_speed_input.setValue(0.0)
+            self.offer_number_input.clear()
+            self.production_batch_number_input.clear()
+            self.part_rev_no_date_input.clear()
+            self.material_description_input.clear()
+            self.surface_treatment_input.clear()
+            self.end_coil_finishing_input.clear()
+            self.enabled_checkbox.setChecked(False)
             
-            # Update our local copy
-            self.specifications = default_spec
+            # Step 2: Clear all set points
+            for widget in self.set_point_widgets:
+                self.set_points_layout.removeWidget(widget)
+                widget.deleteLater()
+            self.set_point_widgets = []
             
-            # Refresh the UI
-            self.load_specifications()
+            # Step 3: Now save the default spec to the settings service
+            success = self.settings_service.set_spring_specification(default_spec)
             
-            # Inform the sequence generator of the change
-            self.sequence_generator.set_spring_specification(default_spec)
+            if not success:
+                print("Failed to save reset specifications")
+                QMessageBox.critical(
+                    self,
+                    "Reset Failed",
+                    "Failed to reset specifications. Please check the log for more information."
+                )
+                return
+            
+            # Step 4: Completely reset the settings service internal state
+            print("Completely resetting settings service internal state")
+            self.settings_service.reset_settings_state()
+            
+            # Step 5: Get a fresh copy of the specification
+            self.specifications = self.settings_service.get_spring_specification()
+            print(f"Reloaded specifications: part_name='{self.specifications.part_name}', part_number='{self.specifications.part_number}'")
+            
+            # Update sequence generator
+            self.sequence_generator.set_spring_specification(self.specifications)
             
             # Emit signal for specifications changed
-            self.specifications_changed.emit(default_spec)
+            self.specifications_changed.emit(self.specifications)
             
             # Show success message
             QMessageBox.information(
                 self,
                 "Reset Complete",
                 "All specifications and set points have been reset to default values."
-            ) 
+            )
 
     def _update_unit_suffixes(self):
         """Update suffixes based on unit selection."""
