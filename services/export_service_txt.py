@@ -677,20 +677,20 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
         logger.debug(f"Final values - Part name: {part_name}, Part number: {part_number}, Free length: {free_length}, Test mode: {test_mode}, Safety limit: {safety_limit}")
         
         with open(file_path, "w") as f:
-            # Write header with mapping from specification panel values
-            f.write(f"1    Part Number     --    {part_name}\n")
-            f.write(f"2    Model Number    --    {part_number}\n")
-            f.write(f"3    Free Length     mm    {free_length}\n")
+            # Write header with mapping from specification panel values - with vertical pipe separators
+            f.write(f"1 | Part Number | -- | {part_name} |\n")
+            f.write(f"2 | Model Number | -- | {part_number} |\n")
+            f.write(f"3 | Free Length | mm | {free_length} |\n")
             
             # Only include test mode and safety limit if they exist
             test_mode_text = test_mode if test_mode else ""
             safety_limit_text = safety_limit if safety_limit else ""
-            f.write(f"<Test Sequence> N          --    {test_mode_text} {safety_limit_text} 100\n\n")
+            f.write(f"<Test Sequence> | N | -- | {test_mode_text} | {safety_limit_text} | 100 |\n\n")
             
             # Get rows from sequence
             rows = sequence.rows
             
-            # Write sequence data - REMOVED R{index:02d} prefix as requested
+            # Write sequence data with vertical pipe separators
             for index, row in enumerate(rows):
                 cmd = row.get('CMD', '')
                 desc = row.get('Description', '')
@@ -698,8 +698,8 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
                 unit = row.get('Unit', '')
                 tolerance = row.get('Tolerance', '')
                 
-                # Modified row string format - removed R{index:02d} prefix
-                row_str = f"{cmd:<6} {desc:<20} {condition:<10} {unit:<4} {tolerance:<20}\n"
+                # Modified row string format with vertical pipes
+                row_str = f"{cmd} | {desc} | {condition} | {unit} | {tolerance} |\n"
                 f.write(row_str)
             
             logger.debug(f"TXT export completed successfully to {file_path}")
