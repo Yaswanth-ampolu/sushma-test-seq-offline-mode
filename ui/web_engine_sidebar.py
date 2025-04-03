@@ -127,7 +127,14 @@ class WebEngineSidebar(QWidget):
         
         # Toggle/Menu button using menubutton.svg
         self.toggle_btn = QToolButton()
-        self.toggle_btn.setIcon(QIcon("resources/menubutton.svg"))
+        # Use absolute path for icon to ensure it works in executable
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                               "resources", "menubutton.svg")
+        if os.path.exists(icon_path):
+            self.toggle_btn.setIcon(QIcon(icon_path))
+        else:
+            print(f"Warning: Web sidebar toggle icon not found at {icon_path}")
+            
         self.toggle_btn.setIconSize(QSize(24, 24))
         self.toggle_btn.setToolTip("Menu (Right-click) & Toggle Sidebar (Left-click)")
         self.toggle_btn.setFixedSize(30, 30)
@@ -1041,14 +1048,18 @@ class WebEngineSidebar(QWidget):
         
         # Export the sequence
         if self.export_service:
-            success, error_msg = self.export_service.export_sequence(
+            success, message = self.export_service.export_sequence(
                 self.current_sequence, file_path, format_name
             )
             
             if success:
-                QMessageBox.information(self, "Export Successful", "Sequence exported successfully.")
+                # For TXT exports, the success message contains the actual file path used
+                if format_name == "TXT" and message:
+                    QMessageBox.information(self, "Export Successful", message)
+                else:
+                    QMessageBox.information(self, "Export Successful", "Sequence exported successfully.")
             else:
-                QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
+                QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {message}")
     
     def quick_export(self):
         """Quickly export the current sequence to CSV without dialog."""
@@ -1365,7 +1376,6 @@ class WebEngineSidebar(QWidget):
                         html += f"<th>{key}</th>"
                 
                 html += """
-                                </tr>
                             </thead>
                             <tbody>
                 """

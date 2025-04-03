@@ -12,6 +12,7 @@ from PyQt5.QtSvg import QSvgWidget
 import pandas as pd
 from datetime import datetime
 import re
+import os
 
 from ui.chat_components.chat_display import ChatBubbleDisplay
 from ui.chat_components.chat_specification_form import SpecificationFormManager
@@ -88,8 +89,10 @@ class ChatPanel(QWidget):
         title_layout = QHBoxLayout()
         title_layout.setContentsMargins(0, 0, 0, 8)
         
-        # Replace the text title with the Sushma logo
-        logo_widget = QSvgWidget("resources/Sushma_logo-722x368.svg")
+        # Replace the text title with the Sushma logo using absolute path
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+                              "resources", "Sushma_logo-722x368.svg")
+        logo_widget = QSvgWidget(logo_path)
         logo_widget.setObjectName("LogoWidget")
         logo_widget.setFixedSize(200, 100)
         logo_widget.setStyleSheet("""
@@ -222,7 +225,15 @@ class ChatPanel(QWidget):
         # Send button with modern icon
         self.generate_btn = QPushButton()
         self.generate_btn.setObjectName("SendButton")
-        self.generate_btn.setIcon(QIcon("resources/sendbutton.svg"))
+        
+        # Use absolute path for icon to ensure it works in executable
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+                               "resources", "sendbutton.svg")
+        if os.path.exists(icon_path):
+            self.generate_btn.setIcon(QIcon(icon_path))
+        else:
+            print(f"Warning: Send button icon not found at {icon_path}")
+            
         self.generate_btn.setIconSize(QSize(20, 20))
         self.generate_btn.setFixedSize(40, 40)
         self.generate_btn.setCursor(Qt.PointingHandCursor)
@@ -649,14 +660,14 @@ class ChatPanel(QWidget):
         }
         
         # Get current API provider from settings for appropriate messaging
-        current_provider = "Together.ai"  # Default
+        current_provider = "FTS.ai"  # Default
         try:
             from utils.settings import get_api_provider
             provider_key = get_api_provider()
             if provider_key == "ollama":
                 current_provider = "Ollama"
             else:
-                current_provider = "Together.ai"
+                current_provider = "FTS.ai"
         except:
             # If there's any error, use generic message
             current_provider = "AI"
@@ -954,29 +965,20 @@ class ChatPanel(QWidget):
             self.progress_bar.setValue(0)
     
     def on_status_updated(self, status):
-        """Handle status updates.
+        """Update status message."""
+        # Replace "Together.ai" with "FTS.ai" in status messages
+        if status and "Together.ai" in status:
+            status = status.replace("Together.ai", "FTS.ai")
         
-        Args:
-            status: Status message.
-        """
-        if status and status.strip():
-            # Check if this is a status message about sending a request to an API
-            if "Sending request" in status:
-                # Get current API provider
-                try:
-                    from utils.settings import get_api_provider
-                    provider_key = get_api_provider()
-                    if provider_key == "ollama":
-                        # Replace any Together.ai mentions with Ollama
-                        status = status.replace("Together.ai", "Ollama")
-                    else:
-                        # Replace any Ollama mentions with Together.ai
-                        status = status.replace("Ollama", "Together.ai")
-                except:
-                    # If there's any error, keep the original status
-                    pass
-                
-            self.status_label.setText(status)
+        self.status_label.setText(status)
+        
+        # Also update window title if needed
+        if self.window() and hasattr(self.window(), "setWindowTitle"):
+            app_name = "Spring Test App"
+            if status:
+                self.window().setWindowTitle(f"{app_name} - {status}")
+            else:
+                self.window().setWindowTitle(app_name)
     
     def validate_api_key(self):
         """Validate the API key.
@@ -1150,8 +1152,12 @@ class ChatPanel(QWidget):
         
         return len(parsed_data["basic_info"]) > 0 or len(parsed_data["set_points"]) > 0
     
-    def toggle_loading_indicator(self):
-        """Toggle the loading indicator appearance for animation effect."""
+    def toggle_loading_indicator(self, is_generating=True):
+        """Toggle the loading indicator.
+        
+        Args:
+            is_generating: Whether generation is in progress (default: True).
+        """
         self.loading_state = (self.loading_state + 1) % 4
         
         # Use different border styles to create a rotation illusion

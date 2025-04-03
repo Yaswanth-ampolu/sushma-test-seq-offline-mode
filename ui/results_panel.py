@@ -190,14 +190,18 @@ class ResultsPanel(QWidget):
             file_name += file_extension
         
         # Export the sequence
-        success, error_msg = self.export_service.export_sequence(
+        success, message = self.export_service.export_sequence(
             self.current_sequence, file_name, format_name
         )
         
         if success:
-            QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_name}")
+            # For TXT exports, the success message contains the actual file path used
+            if format_name == "TXT" and message:
+                QMessageBox.information(self, "Export Successful", message)
+            else:
+                QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_name}")
         else:
-            QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
+            QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {message}")
     
     def clear_display(self):
         """Clear the results display."""

@@ -142,8 +142,18 @@ class ExportService:
         Returns:
             Tuple of (success flag, error message)
         """
+        logger.debug(f"Calling specialized TXT export function with path: {file_path}")
+        
         # Call the specialized TXT export function
-        return export_txt(sequence, file_path)
+        success, message = export_txt(sequence, file_path)
+        
+        # Log the result
+        if success:
+            logger.debug(f"TXT export successful: {message}")
+        else:
+            logger.error(f"TXT export failed: {message}")
+            
+        return success, message
     
     def get_supported_formats(self) -> List[str]:
         """Get the list of supported export formats.

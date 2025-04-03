@@ -478,4 +478,26 @@ class SequenceGenerator(QObject):
         """
         # This would load predefined templates and fill in the parameters
         # For now, just return None
-        return None 
+        return None
+
+    def _get_status_message(self, provider=None):
+        """Get a status message based on the provider."""
+        if not provider:
+            return "Generating test sequence..."
+        
+        if "together" in provider.lower():
+            return "Processing your request with FTS.ai..."
+        elif "openai" in provider.lower():
+            return "Processing your request with OpenAI..."
+        elif "anthropic" in provider.lower():
+            return "Processing your request with Claude..."
+        else:
+            return f"Processing your request with {provider}..."
+
+    def _set_status(self, message):
+        """Update status message and emit signal."""
+        # Replace any mentions of Together.ai with FTS.ai
+        if message and "Together.ai" in message:
+            message = message.replace("Together.ai", "FTS.ai")
+        
+        self.status_updated.emit(message) 

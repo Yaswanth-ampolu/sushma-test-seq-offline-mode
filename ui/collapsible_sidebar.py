@@ -6,13 +6,14 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTabWidg
                            QPushButton, QHeaderView, QTableView, QSizePolicy, QGroupBox,
                            QTextEdit, QToolButton, QFrame, QStackedWidget, QScrollArea,
                            QComboBox, QFileDialog, QMessageBox, QMenu, QAction, QApplication)
-from PyQt5.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, pyqtProperty, pyqtSignal
-from PyQt5.QtGui import QFont, QIcon, QPalette, QColor
+from PyQt5.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, pyqtProperty, pyqtSignal, QEvent, QTimer
+from PyQt5.QtGui import QFont, QIcon, QPalette, QColor, QCursor
 
 import pandas as pd
 import json
 from models.table_models import PandasModel
 from utils.constants import FILE_FORMATS
+import os
 
 
 class CollapsibleSidebar(QWidget):
@@ -67,7 +68,15 @@ class CollapsibleSidebar(QWidget):
         
         # Toggle/Menu button using menubutton.svg
         self.toggle_btn = QToolButton()
-        self.toggle_btn.setIcon(QIcon("resources/menubutton.svg"))
+        
+        # Use absolute path for icon to ensure it works in executable
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                               "resources", "menubutton.svg")
+        if os.path.exists(icon_path):
+            self.toggle_btn.setIcon(QIcon(icon_path))
+        else:
+            print(f"Warning: Sidebar toggle icon not found at {icon_path}")
+            
         self.toggle_btn.setIconSize(QSize(24, 24))
         self.toggle_btn.setToolTip("Menu (Right-click) & Toggle Sidebar (Left-click)")
         self.toggle_btn.setFixedSize(30, 30)
@@ -387,16 +396,25 @@ class CollapsibleSidebar(QWidget):
             file_name += file_extension
         
         # Export the sequence
-        success, error_msg = self.export_service.export_sequence(
+        success, message = self.export_service.export_sequence(
             self.current_sequence, file_name, format_name
         )
         
         if success:
-            QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_name}")
+            # For TXT exports, the success message contains the actual file path used
+            if format_name == "TXT" and message:
+                QMessageBox.information(self, "Export Successful", message)
+            else:
+                QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_name}")
         else:
-            QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
+            QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {message}")
     
     def on_toggle_btn_clicked(self):
+        """Handle toggle button clicks by toggling sidebar and showing context menu on right-click."""
+        # Get mouse button from event
+        self.toggle_sidebar()
+        
+    def toggle_sidebar(self):
         """Handle toggle button clicks by toggling sidebar and showing context menu on right-click."""
         # Get mouse button from event
         modifiers = QApplication.keyboardModifiers()

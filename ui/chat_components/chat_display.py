@@ -397,4 +397,18 @@ class ChatBubbleDisplay(QWebEngineView):
         self.chat_history.append(message)
         
         
-        self.refresh_display() 
+        self.refresh_display()
+
+    def _format_message(self, message, sender):
+        """Format a message for display, replacing any references to Together.ai with FTS.ai."""
+        formatted_message = message
+        
+        # Replace any references to Together.ai in the message with FTS.ai
+        if "Together.ai" in formatted_message:
+            formatted_message = formatted_message.replace("Together.ai", "FTS.ai")
+        
+        # If model information is displayed, ensure it shows FTS.ai instead of Together.ai
+        if "Model: together" in formatted_message.lower():
+            formatted_message = re.sub(r"Model: Together[^\s]*", "Model: FTS.ai", formatted_message, flags=re.IGNORECASE)
+        
+        return formatted_message

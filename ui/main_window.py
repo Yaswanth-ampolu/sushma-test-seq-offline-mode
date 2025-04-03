@@ -156,6 +156,25 @@ class MainWindow(QMainWindow):
         # Accept the event
         event.accept()
 
+    def updateWindowTitle(self, status=None):
+        """Update the window title, possibly with status information."""
+        title = "Spring Test App"
+        if status:
+            # Replace Together.ai with FTS.ai in window titles
+            if "Together.ai" in status:
+                status = status.replace("Together.ai", "FTS.ai")
+            title += f" - {status}"
+        self.setWindowTitle(title)
+
+    def updateStatusBar(self, message):
+        """Update the status bar with a message."""
+        # Replace Together.ai with FTS.ai in status bar messages
+        if message and "Together.ai" in message:
+            message = message.replace("Together.ai", "FTS.ai")
+        
+        if hasattr(self, 'statusBar'):
+            self.statusBar().showMessage(message)
+
 
 def create_main_window(settings_service, sequence_generator, chat_service, export_service):
     """Create and configure the main window.

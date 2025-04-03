@@ -227,4 +227,27 @@ class ChatService:
         for message in reversed(self.history):
             if message.role == "assistant":
                 return message
-        return None 
+        return None
+    
+    def get_status_message(self, provider=None):
+        """Get appropriate status message based on provider."""
+        if not provider:
+            provider = self.get_current_provider()
+        
+        if provider and "together" in provider.lower():
+            return "Processing your message with FTS.ai..."
+        elif provider and "openai" in provider.lower():
+            return "Processing your message with OpenAI..."
+        elif provider and "anthropic" in provider.lower():
+            return "Processing your message with Claude..."
+        else:
+            return "Processing your message..."
+    
+    # If there's a function that sets status messages:
+    def set_status(self, message):
+        """Set status message and emit signal."""
+        # Replace any mentions of Together.ai with FTS.ai
+        if message and "Together.ai" in message:
+            message = message.replace("Together.ai", "FTS.ai")
+        
+        self.status_updated.emit(message) 

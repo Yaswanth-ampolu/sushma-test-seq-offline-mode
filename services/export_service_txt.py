@@ -657,14 +657,12 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
     
     Args:
         sequence: Sequence to export.
-        file_path: Path to the output file.
+        file_path: Path to the output file. Will be modified to follow pattern "AS 01~<Part Number>.txt"
         
     Returns:
         Tuple of (success flag, error message)
     """
     try:
-        logger.debug(f"Starting TXT export to {file_path}")
-        
         # Get key specifications using the new function
         specs = extract_key_specifications(sequence)
         part_name = specs["part_name"]
@@ -676,7 +674,26 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
         
         logger.debug(f"Final values - Part name: {part_name}, Part number: {part_number}, Free length: {free_length}, Test mode: {test_mode}, Safety limit: {safety_limit}")
         
-        with open(file_path, "w") as f:
+        # Create the standardized filename using part_number
+        if not part_number:
+            # If no part number found, use a default
+            part_number = "unknown_part"
+            
+        # Get the directory from the original file_path
+        output_dir = os.path.dirname(file_path)
+        if not output_dir:  # If no directory specified, use current directory
+            output_dir = "."
+        
+        # Create the new filename following the requested format
+        new_filename = f"AS 01~{part_number}.txt"
+        
+        # Combine directory with new filename
+        new_file_path = os.path.join(output_dir, new_filename)
+        
+        logger.debug(f"Original file path: {file_path}")
+        logger.debug(f"Modified file path: {new_file_path}")
+        
+        with open(new_file_path, "w") as f:
             # Write header with mapping from specification panel values - with vertical pipe separators
             f.write(f"1 | Part Number | -- | {part_name} |\n")
             f.write(f"2 | Model Number | -- | {part_number} |\n")
@@ -697,14 +714,16 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
                 condition = row.get('Condition', '')
                 unit = row.get('Unit', '')
                 tolerance = row.get('Tolerance', '')
+                speed_rpm = row.get('Speed rpm', '')  # Extract Speed rpm field
                 
-                # Modified row string format with vertical pipes
-                row_str = f"{cmd} | {desc} | {condition} | {unit} | {tolerance} |\n"
+                # Modified row string format with vertical pipes, including Speed rpm
+                row_str = f"{cmd} | {desc} | {condition} | {unit} | {tolerance} | {speed_rpm} |\n"
                 f.write(row_str)
             
-            logger.debug(f"TXT export completed successfully to {file_path}")
+            logger.debug(f"TXT export completed successfully to {new_file_path}")
             
-        return True, ""
+        # Return the success message with the actual file path that was used
+        return True, f"Successfully exported to {new_file_path}"
     except Exception as e:
         logger.error(f"TXT export error: {str(e)}")
         return False, f"TXT export error: {str(e)}" 
