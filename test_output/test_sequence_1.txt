@@ -1,0 +1,11 @@
+1    Part Number     --    Test Spring 1
+2    Model Number    --    TST-001
+3    Free Length     mm    58.0
+<Test Sequence> N          --    Height 300 100
+
+ZF     Zero Force                                               
+TH     Search Contact       10         N                        
+FL(P)  Measure Free Length-Position            mm   58(52.2,63.8)       
+Mv(P)  Move to Position L1  40         mm                       
+Mv(P)  Move to Position L2  33         mm                       
+Scrag  Scragging            R04,2                               

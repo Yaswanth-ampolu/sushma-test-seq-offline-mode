@@ -56,7 +56,6 @@ ASSISTANT_ICON = "🤖"
 FILE_FORMATS = {
     "CSV": ".csv",
     "JSON": ".json",
-    "Excel": ".xlsx",
     "TXT": ".txt"
 }
 

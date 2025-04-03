@@ -204,11 +204,6 @@ class CollapsibleSidebar(QWidget):
             self.export_btn.setEnabled(False)  # Disabled until a sequence is available
             export_btn_layout.addWidget(self.export_btn)
             
-            self.save_template_btn = QPushButton("Save as Template")
-            self.save_template_btn.clicked.connect(self.on_save_template_clicked)
-            self.save_template_btn.setEnabled(False)  # Disabled until a sequence is available
-            export_btn_layout.addWidget(self.save_template_btn)
-            
             export_layout.addLayout(export_btn_layout)
             
             export_group.setLayout(export_layout)
@@ -335,8 +330,6 @@ class CollapsibleSidebar(QWidget):
         # Enable export buttons if they exist
         if hasattr(self, 'export_btn'):
             self.export_btn.setEnabled(True)
-        if hasattr(self, 'save_template_btn'):
-            self.save_template_btn.setEnabled(True)
         
         # Restore the current view
         self.sequence_stack.setCurrentIndex(current_view)
@@ -366,8 +359,6 @@ class CollapsibleSidebar(QWidget):
         # Disable export buttons if they exist
         if hasattr(self, 'export_btn'):
             self.export_btn.setEnabled(False)
-        if hasattr(self, 'save_template_btn'):
-            self.save_template_btn.setEnabled(False)
     
     def on_export_clicked(self):
         """Handle export button clicks."""
@@ -404,16 +395,6 @@ class CollapsibleSidebar(QWidget):
             QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_name}")
         else:
             QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
-    
-    def on_save_template_clicked(self):
-        """Handle save template button clicks."""
-        # Check if a sequence is available
-        if not self.current_sequence:
-            QMessageBox.warning(self, "No Sequence", "No test sequence available to save as a template.")
-            return
-        
-        # Not implemented yet
-        QMessageBox.information(self, "Not Implemented", "This feature is not yet implemented.")
     
     def on_toggle_btn_clicked(self):
         """Handle toggle button clicks by toggling sidebar and showing context menu on right-click."""

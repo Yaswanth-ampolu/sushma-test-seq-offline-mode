@@ -199,90 +199,156 @@ class BasicInfoSection(SpecificationFormSection):
         self._create_form_inputs()
     
     def _create_form_inputs(self):
-        """Create form inputs for basic info."""
-        # Part number input
+        """Create form inputs for basic info arranged in two columns."""
+        # Create container widget for the two columns
+        form_container = QWidget()
+        columns_layout = QHBoxLayout(form_container)
+        columns_layout.setSpacing(40)  # Increase spacing between columns
+        columns_layout.setContentsMargins(20, 10, 20, 10)  # Add some padding
+        
+        # Create left and right containers
+        left_container = QWidget()
+        right_container = QWidget()
+        
+        # Create layouts for both containers
+        left_layout = QFormLayout(left_container)
+        right_layout = QFormLayout(right_container)
+        
+        # Set minimum widths for better visibility
+        left_container.setMinimumWidth(400)
+        right_container.setMinimumWidth(400)
+        
+        # Set form layout properties for better alignment
+        left_layout.setLabelAlignment(Qt.AlignRight)
+        right_layout.setLabelAlignment(Qt.AlignRight)
+        left_layout.setSpacing(15)
+        right_layout.setSpacing(15)
+        
+        # Left Column (6 items)
+        # 1. Part number input
         self.part_number_input = QLineEdit()
-        self.part_number_input.setMinimumWidth(120)
+        self.part_number_input.setMinimumWidth(200)
         self.part_number_input.setPlaceholderText("Enter part number")
-        self.form_layout.addRow("Part Number:", self.part_number_input)
+        left_layout.addRow("Part Number:", self.part_number_input)
         
-        # Part name input
+        # 2. Part name input
         self.part_name_input = QLineEdit()
-        self.part_name_input.setMinimumWidth(120)
+        self.part_name_input.setMinimumWidth(200)
         self.part_name_input.setPlaceholderText("Enter part name")
-        self.form_layout.addRow("Part Name:", self.part_name_input)
+        left_layout.addRow("Part Name:", self.part_name_input)
         
-        # Part ID input
+        # 3. Part ID input
         self.part_id_input = QLineEdit()
-        self.part_id_input.setMinimumWidth(120)
+        self.part_id_input.setMinimumWidth(200)
         self.part_id_input.setPlaceholderText("Enter part ID")
-        self.form_layout.addRow("Part ID:", self.part_id_input)
+        left_layout.addRow("Part ID:", self.part_id_input)
         
-        # Free length input
+        # 4. Free length input
         self.free_length_input = QDoubleSpinBox()
         self.free_length_input.setRange(0, 1000)
         self.free_length_input.setSuffix(" mm")
         self.free_length_input.setDecimals(2)
-        self.free_length_input.setMinimumWidth(120)
-        self.form_layout.addRow("Free Length:", self.free_length_input)
+        self.free_length_input.setMinimumWidth(200)
+        left_layout.addRow("Free Length:", self.free_length_input)
         
-        # Component Type input
+        # 5. Component Type input
         self.component_type_input = QComboBox()
         self.component_type_input.addItems(["Compression", "Tension"])
-        self.component_type_input.setMinimumWidth(120)
-        self.form_layout.addRow("Component Type:", self.component_type_input)
+        self.component_type_input.setMinimumWidth(200)
+        left_layout.addRow("Component Type:", self.component_type_input)
         
-        # Test Mode input
+        # 6. Test Mode input
         self.test_mode_input = QComboBox()
-        self.test_mode_input.addItems(["Height Mode", "Deflection Mode", "Tension Mode"])
+        self.test_mode_input.addItems(["Height Mode", "Deflection Mode", "Force Mode"])
         self.test_mode_input.setCurrentText("Height Mode")
-        self.test_mode_input.setMinimumWidth(120)
-        self.form_layout.addRow("Test Mode:", self.test_mode_input)
+        self.test_mode_input.setMinimumWidth(200)
+        left_layout.addRow("Test Mode:", self.test_mode_input)
         
-        # Displacement Unit input
+        # Add left container to main layout
+        columns_layout.addWidget(left_container)
+        
+        # Add a vertical line separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.VLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("background-color: #dadce0;")
+        columns_layout.addWidget(separator)
+        
+        # Right Column (5 items)
+        # 1. Displacement Unit input
         self.unit_input = QComboBox()
         self.unit_input.addItems(["mm", "inch"])
         self.unit_input.setCurrentText("mm")
-        self.unit_input.setMinimumWidth(120)
-        self.form_layout.addRow("Displacement Unit:", self.unit_input)
+        self.unit_input.setMinimumWidth(200)
+        right_layout.addRow("Displacement Unit:", self.unit_input)
         
-        # Force Unit input
+        # 2. Force Unit input
         self.force_unit_input = QComboBox()
         self.force_unit_input.addItems(["N", "lbf", "kgf"])
         self.force_unit_input.setCurrentText("N")
-        self.force_unit_input.setMinimumWidth(120)
-        self.form_layout.addRow("Force Unit:", self.force_unit_input)
+        self.force_unit_input.setMinimumWidth(200)
+        right_layout.addRow("Force Unit:", self.force_unit_input)
         
-        # First Speed input
+        # 3. First Speed input
         self.first_speed_input = QDoubleSpinBox()
         self.first_speed_input.setRange(0, 1000)
         self.first_speed_input.setSuffix(" mm/s")
         self.first_speed_input.setDecimals(1)
-        self.first_speed_input.setMinimumWidth(120)
-        self.form_layout.addRow("First Speed:", self.first_speed_input)
+        self.first_speed_input.setMinimumWidth(200)
+        right_layout.addRow("First Speed:", self.first_speed_input)
         
-        # Second Speed input
+        # 4. Second Speed input
         self.second_speed_input = QDoubleSpinBox()
         self.second_speed_input.setRange(0, 1000)
         self.second_speed_input.setSuffix(" mm/s")
         self.second_speed_input.setDecimals(1)
-        self.second_speed_input.setMinimumWidth(120)
-        self.form_layout.addRow("Second Speed:", self.second_speed_input)
+        self.second_speed_input.setMinimumWidth(200)
+        right_layout.addRow("Second Speed:", self.second_speed_input)
         
-        # Safety limit input moved from optional to basic info
+        # 5. Safety limit input
         self.safety_limit_input = QDoubleSpinBox()
         self.safety_limit_input.setRange(0, 10000)
         self.safety_limit_input.setDecimals(2)
         self.safety_limit_input.setSuffix(" N")
-        self.safety_limit_input.setMinimumWidth(120)
-        self.form_layout.addRow("Safety Limit:", self.safety_limit_input)
+        self.safety_limit_input.setMinimumWidth(200)
+        right_layout.addRow("Safety Limit:", self.safety_limit_input)
         
-        # Add descriptive text
+        # Add right container to main layout
+        columns_layout.addWidget(right_container)
+        
+        # Add the form container to main layout
+        self.main_layout.addWidget(form_container)
+        
+        # Add descriptive text at the top
         description = QLabel("Enter the basic information about your spring that will be used for testing.")
         description.setStyleSheet("color: #5f6368; font-size: 12px; margin-top: 5px;")
         description.setWordWrap(True)
         description.setAlignment(Qt.AlignCenter)
         self.main_layout.insertWidget(0, description)
+        
+        # Make form wider to fit both columns
+        self.setFixedWidth(1000)  # Increase overall width
+        form_container.setFixedWidth(960)  # Set container width
+        
+        # Update the parent widget's size policy
+        self.parent().setMinimumWidth(1020)  # Make parent widget wide enough
+        
+        # Style the containers
+        style = """
+            QWidget {
+                background-color: transparent;
+            }
+            QLabel {
+                font-size: 13px;
+            }
+            QLineEdit, QDoubleSpinBox, QComboBox {
+                min-width: 200px;
+                padding: 5px;
+                font-size: 13px;
+            }
+        """
+        left_container.setStyleSheet(style)
+        right_container.setStyleSheet(style)
     
     def collect_data(self):
         """Collect data from the form."""
@@ -432,6 +498,28 @@ class SetPointSection(SpecificationFormSection):
         self.tolerance_input.setMinimumWidth(120)
         self.form_layout.addRow("Tolerance:", self.tolerance_input)
         
+        # Scrag section
+        scrag_container = QWidget()
+        scrag_layout = QHBoxLayout(scrag_container)
+        scrag_layout.setContentsMargins(0, 0, 0, 0)
+        scrag_layout.setSpacing(8)
+        
+        # Scrag checkbox
+        self.scrag_checkbox = QCheckBox("Enable Scrag")
+        self.scrag_checkbox.setChecked(False)
+        self.scrag_checkbox.stateChanged.connect(self.on_scrag_enabled_changed)
+        scrag_layout.addWidget(self.scrag_checkbox)
+        
+        # Scrag value input
+        self.scrag_input = QDoubleSpinBox()
+        self.scrag_input.setRange(0, 500)
+        self.scrag_input.setDecimals(2)
+        self.scrag_input.setEnabled(False)
+        self.scrag_input.setMinimumWidth(120)
+        scrag_layout.addWidget(self.scrag_input)
+        
+        self.form_layout.addRow("Scrag:", scrag_container)
+        
         # Explanatory text
         explanation = QLabel("Position = height in mm, Load = force in N")
         explanation.setStyleSheet("color: #5f6368; font-size: 12px; margin-top: 5px;")
@@ -459,6 +547,10 @@ class SetPointSection(SpecificationFormSection):
         
         self.main_layout.addWidget(checkbox_container)
     
+    def on_scrag_enabled_changed(self, state):
+        """Handle scrag enabled state changes."""
+        self.scrag_input.setEnabled(state == Qt.Checked)
+    
     def collect_data(self):
         """Collect data from the form."""
         self.collected_data = {
@@ -467,6 +559,8 @@ class SetPointSection(SpecificationFormSection):
             "load": self.load_input.value(),
             "tolerance": self.tolerance_input.value(),
             "add_another": self.add_another_checkbox.isChecked(),
+            "scrag_enabled": self.scrag_checkbox.isChecked(),
+            "scrag_value": self.scrag_input.value()
         }
         return self.collected_data
 
@@ -480,8 +574,6 @@ class SpecificationFormManager(QWidget):
     def __init__(self, parent=None):
         """Initialize the form manager."""
         super().__init__(parent)
-        
-        # Set up UI
         self._init_ui()
         
         # Track form data
@@ -506,7 +598,7 @@ class SpecificationFormManager(QWidget):
         
         # Set initial size policy
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
-        self.setFixedWidth(420) # Container slightly wider than sections
+        self.setFixedWidth(1020) # Container width to accommodate the wider form
         
         # Apply styling
         self.setStyleSheet("""

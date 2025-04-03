@@ -339,27 +339,6 @@ class WebEngineSidebar(QWidget):
             self.export_btn.setEnabled(False)  # Disabled until a sequence is available
             export_btn_layout.addWidget(self.export_btn)
             
-            self.save_template_btn = QPushButton("Save as Template")
-            self.save_template_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #f8f9fa;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    padding: 5px 10px;
-                    height: 24px;
-                }
-                QPushButton:hover {
-                    background-color: #e9ecef;
-                }
-                QPushButton:disabled {
-                    color: #aaa;
-                    border: 1px solid #eee;
-                }
-            """)
-            self.save_template_btn.clicked.connect(self.on_save_template_clicked)
-            self.save_template_btn.setEnabled(False)  # Disabled until a sequence is available
-            export_btn_layout.addWidget(self.save_template_btn)
-            
             export_layout.addLayout(export_btn_layout)
             
             export_group.setLayout(export_layout)
@@ -1038,48 +1017,38 @@ class WebEngineSidebar(QWidget):
     def on_export_clicked(self):
         """Handle export button clicks."""
         # Check if a sequence is available
-        if not self.current_sequence or not self.export_service:
+        if not self.current_sequence:
             QMessageBox.warning(self, "No Sequence", "No test sequence available to export.")
             return
         
-        # Get selected format
+        # Get the selected format
         format_name = self.format_combo.currentText()
         file_extension = FILE_FORMATS.get(format_name, ".csv")
         
-        # Debug print to verify format and extension
-        print(f"Exporting with format: {format_name}, extension: {file_extension}")
+        # Show file dialog
+        file_path, _ = QFileDialog.getSaveFileName(self, 
+                                                 "Export Sequence", 
+                                                 "", 
+                                                 f"{format_name} Files (*{file_extension});;All Files (*)")
         
-        # Get file name from user
-        file_name, _ = QFileDialog.getSaveFileName(
-            self, "Export Sequence", "", f"{format_name} Files (*{file_extension})"
-        )
-        
-        if not file_name:
-            return  # User cancelled
-        
-        # Add extension if not present
-        if not file_name.endswith(file_extension):
-            file_name += file_extension
-        
-        # Export the sequence
-        success, error_msg = self.export_service.export_sequence(
-            self.current_sequence, file_name, format_name
-        )
-        
-        if success:
-            QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_name}")
-        else:
-            QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
-    
-    def on_save_template_clicked(self):
-        """Handle save template button clicks."""
-        # Check if a sequence is available
-        if not self.current_sequence:
-            QMessageBox.warning(self, "No Sequence", "No test sequence available to save as a template.")
+        if not file_path:
+            # User cancelled
             return
         
-        # Not implemented yet
-        QMessageBox.information(self, "Not Implemented", "This feature is not yet implemented.")
+        # Add extension if not present
+        if not any(file_path.endswith(ext) for ext in [".csv", ".json", ".xlsx", ".xls", ".txt"]):
+            file_path += file_extension
+        
+        # Export the sequence
+        if self.export_service:
+            success, error_msg = self.export_service.export_sequence(
+                self.current_sequence, file_path, format_name
+            )
+            
+            if success:
+                QMessageBox.information(self, "Export Successful", "Sequence exported successfully.")
+            else:
+                QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
     
     def quick_export(self):
         """Quickly export the current sequence to CSV without dialog."""

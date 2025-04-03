@@ -121,11 +121,6 @@ class ResultsPanel(QWidget):
         self.export_btn.setEnabled(False)  # Disabled until a sequence is available
         export_btn_layout.addWidget(self.export_btn)
         
-        self.save_template_btn = QPushButton("Save as Template")
-        self.save_template_btn.clicked.connect(self.on_save_template_clicked)
-        self.save_template_btn.setEnabled(False)  # Disabled until a sequence is available
-        export_btn_layout.addWidget(self.save_template_btn)
-        
         export_layout.addLayout(export_btn_layout)
         
         export_group.setLayout(export_layout)
@@ -164,7 +159,6 @@ class ResultsPanel(QWidget):
         
         # Enable export buttons
         self.export_btn.setEnabled(True)
-        self.save_template_btn.setEnabled(True)
         
         # Switch to sequence tab
         self.tab_widget.setCurrentIndex(0)
@@ -205,16 +199,6 @@ class ResultsPanel(QWidget):
         else:
             QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {error_msg}")
     
-    def on_save_template_clicked(self):
-        """Handle save template button clicks."""
-        # Check if a sequence is available
-        if not self.current_sequence:
-            QMessageBox.warning(self, "No Sequence", "No test sequence available to save as a template.")
-            return
-        
-        # Not implemented yet
-        QMessageBox.information(self, "Not Implemented", "This feature is not yet implemented.")
-    
     def clear_display(self):
         """Clear the results display."""
         # Clear table
@@ -228,7 +212,6 @@ class ResultsPanel(QWidget):
         
         # Disable export buttons
         self.export_btn.setEnabled(False)
-        self.save_template_btn.setEnabled(False)
         
         # Clear current sequence
         self.current_sequence = None 

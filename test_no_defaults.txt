@@ -1,0 +1,7 @@
+1    Part Number     --    Test Spring
+2    Model Number    --    TS-001
+3    Free Length     mm    50.0
+<Test Sequence> N          --      100
+
+ZF     Zero Force                                               
+TH     Search Contact       10         N                        

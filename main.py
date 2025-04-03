@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from services.settings_service import SettingsService
 from services.sequence_generator import SequenceGenerator
 from services.chat_service import ChatService
-from services.export_service import ExportService, TemplateManager
+from services.export_service import ExportService
 
 # Import data models
 from models.data_models import SpringSpecification, SetPoint

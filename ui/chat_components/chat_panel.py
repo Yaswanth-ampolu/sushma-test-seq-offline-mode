@@ -1405,7 +1405,9 @@ class ChatPanel(QWidget):
                     position=sp_data.get("position", 0.0),
                     load=sp_data.get("load", 0.0),
                     tolerance=sp_data.get("tolerance", 10.0),
-                    enabled=True
+                    enabled=True,
+                    scrag_enabled=sp_data.get("scrag_enabled", False),
+                    scrag_value=sp_data.get("scrag_value", 0.0)
                 )
             
             print(f"Added {len(set_points)} set points")

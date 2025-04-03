@@ -87,6 +87,27 @@ class SetPointWidget(QGroupBox):
         self.tolerance_input.valueChanged.connect(self.on_tolerance_changed)
         form_layout.addRow("Tolerance:", self.tolerance_input)
         
+        # Scrag section
+        scrag_layout = QHBoxLayout()
+        
+        # Scrag checkbox
+        self.scrag_checkbox = QCheckBox("Scrag")
+        self.scrag_checkbox.setChecked(self.set_point.scrag_enabled)
+        self.scrag_checkbox.stateChanged.connect(self.on_scrag_enabled_changed)
+        scrag_layout.addWidget(self.scrag_checkbox)
+        
+        # Scrag value input
+        self.scrag_input = QDoubleSpinBox()
+        self.scrag_input.setRange(0, 500)
+        self.scrag_input.setValue(self.set_point.scrag_value)
+        self.scrag_input.setDecimals(2)
+        self.scrag_input.setEnabled(self.set_point.scrag_enabled)
+        self.scrag_input.valueChanged.connect(self.on_scrag_value_changed)
+        scrag_layout.addWidget(self.scrag_input)
+        
+        # Add scrag section to form
+        form_layout.addRow("", scrag_layout)
+        
         layout.addLayout(form_layout)
         
         # Controls in a horizontal layout
@@ -150,6 +171,25 @@ class SetPointWidget(QGroupBox):
     def on_delete_clicked(self):
         """Handle delete button clicks."""
         self.delete_requested.emit(self)
+    
+    def on_scrag_enabled_changed(self, state):
+        """Handle scrag enabled state changes.
+        
+        Args:
+            state: New scrag enabled state.
+        """
+        self.set_point.scrag_enabled = (state == Qt.Checked)
+        self.scrag_input.setEnabled(self.set_point.scrag_enabled)
+        self.changed.emit()
+    
+    def on_scrag_value_changed(self, value):
+        """Handle scrag value changes.
+        
+        Args:
+            value: New scrag value.
+        """
+        self.set_point.scrag_value = value
+        self.changed.emit()
     
     def update_index(self, new_index):
         """Update the set point index.
@@ -266,7 +306,7 @@ class SpecificationsPanel(QWidget):
         
         # Test Mode input
         self.test_mode_input = QComboBox()
-        self.test_mode_input.addItems(["Height Mode", "Deflection Mode", "Tension Mode"])
+        self.test_mode_input.addItems(["Height Mode", "Deflection Mode", "Force Mode"])
         self.test_mode_input.currentTextChanged.connect(self.on_basic_info_changed)
         basic_info_layout.addRow("Test Mode:", self.test_mode_input)
         
@@ -562,8 +602,8 @@ class SpecificationsPanel(QWidget):
         # Map old values to new values
         mode_mapping = {
             "Height": "Height Mode",
-            "Force": "Deflection Mode",
-            "Tension": "Tension Mode"
+            "Deflection": "Deflection Mode",
+            "Force": "Force Mode"
         }
         
         # Return the mapped value if it exists, otherwise return the original value
@@ -822,7 +862,7 @@ class SpecificationsPanel(QWidget):
             "outer_dia": r"(?:^|\s+)OD:?\s*([\d.]+)",
             "safety_limit": r"(?:^|\s+)[Ss]afety\s+[Ll]imit:?\s*([\d.]+)",
             "force_unit": r"(?:^|\s+)Force\s+Unit:?\s*(\w+)",
-            "test_mode": r"(?:^|\s+)Test\s+Mode:?\s*(Height Mode|Deflection Mode|Tension Mode|Height|Deflection|Tension)",
+            "test_mode": r"(?:^|\s+)Test\s+Mode:?\s*(Height Mode|Deflection Mode|Force Mode|Height|Deflection|Tension)",
             "component_type": r"(?:^|\s+)Component\s+Type:?\s*(\w+)",
             "first_speed": r"(?:^|\s+)First\s+Speed:?\s*([\d.]+)",
             "second_speed": r"(?:^|\s+)Second\s+Speed:?\s*([\d.]+)",
@@ -1265,8 +1305,8 @@ class SpecificationsPanel(QWidget):
                 r'(?:^|\n)[\s:]*force[\s:]*unit[\s:]*(\w+)'
             ],
             "test_mode": [
-                r'test[\s:]+mode[\s:]*(Height Mode|Deflection Mode|Tension Mode|Height|Deflection|Tension)',
-                r'(?:^|\n)[\s:]*test[\s:]*mode[\s:]*(Height Mode|Deflection Mode|Tension Mode|Height|Deflection|Tension)'
+                r'test[\s:]+mode[\s:]*(Height Mode|Deflection Mode|Force Mode|Height|Deflection|Tension)',
+                r'(?:^|\n)[\s:]*test[\s:]*mode[\s:]*(Height Mode|Deflection Mode|Force Mode|Height|Deflection|Tension)'
             ],
             "component_type": [
                 r'component[\s:]+type[\s:]*(\w+)',
