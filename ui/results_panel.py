@@ -12,6 +12,8 @@ import pandas as pd
 from models.table_models import PandasModel
 from models.data_models import TestSequence
 from utils.constants import FILE_FORMATS
+import os
+import datetime
 
 
 class ResultsPanel(QWidget):
@@ -174,20 +176,23 @@ class ResultsPanel(QWidget):
         format_name = self.format_combo.currentText()
         file_extension = FILE_FORMATS.get(format_name, ".csv")
         
-        # Debug print to verify format and extension
-        print(f"Exporting with format: {format_name}, extension: {file_extension}")
+        # Use the fixed export directory instead of showing file dialog
+        export_directory = r"C:\SI\SI-FTS Software-NPD\Master Data"
         
-        # Get file name from user
-        file_name, _ = QFileDialog.getSaveFileName(
-            self, "Export Sequence", "", f"{format_name} Files (*{file_extension})"
-        )
+        # Create the directory if it doesn't exist
+        if not os.path.exists(export_directory):
+            try:
+                os.makedirs(export_directory)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not create export directory: {str(e)}")
+                return
         
-        if not file_name:
-            return  # User cancelled
+        # Generate a default filename using timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"spring_sequence_{timestamp}{file_extension}"
         
-        # Add extension if not present
-        if not file_name.endswith(file_extension):
-            file_name += file_extension
+        # Create the full file path
+        file_name = os.path.join(export_directory, default_filename)
         
         # Export the sequence
         success, message = self.export_service.export_sequence(
