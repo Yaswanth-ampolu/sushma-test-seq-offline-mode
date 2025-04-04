@@ -1036,6 +1036,18 @@ class ChatPanel(QWidget):
     
     def show_specification_form(self):
         """Show the specification form in the chat panel."""
+        # Add a message to indicate processing
+        self.chat_service.add_message(
+            "assistant", 
+            "Opening specifications form..."
+        )
+        self.refresh_chat_display()
+        
+        # Add a delay of 3.0 seconds to simulate processing time
+        QTimer.singleShot(3000, self._display_specification_form)
+    
+    def _display_specification_form(self):
+        """Actually display the specification form after delay."""
         # Create form manager if needed
         self._create_spec_form_manager()
         

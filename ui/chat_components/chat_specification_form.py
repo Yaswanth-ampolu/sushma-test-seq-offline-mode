@@ -245,9 +245,9 @@ class BasicInfoSection(SpecificationFormSection):
         
         # 4. Free length input
         self.free_length_input = QDoubleSpinBox()
-        self.free_length_input.setRange(0, 1000)
+        self.free_length_input.setRange(0, 99999)
         self.free_length_input.setSuffix(" mm")
-        self.free_length_input.setDecimals(2)
+        self.free_length_input.setDecimals(3)
         self.free_length_input.setMinimumWidth(200)
         left_layout.addRow("Free Length:", self.free_length_input)
         
@@ -291,7 +291,7 @@ class BasicInfoSection(SpecificationFormSection):
         
         # 3. First Speed input
         self.first_speed_input = QDoubleSpinBox()
-        self.first_speed_input.setRange(0, 1000)
+        self.first_speed_input.setRange(0, 99999)
         self.first_speed_input.setSuffix(" mm/s")
         self.first_speed_input.setDecimals(1)
         self.first_speed_input.setMinimumWidth(200)
@@ -299,7 +299,7 @@ class BasicInfoSection(SpecificationFormSection):
         
         # 4. Second Speed input
         self.second_speed_input = QDoubleSpinBox()
-        self.second_speed_input.setRange(0, 1000)
+        self.second_speed_input.setRange(0, 99999)
         self.second_speed_input.setSuffix(" mm/s")
         self.second_speed_input.setDecimals(1)
         self.second_speed_input.setMinimumWidth(200)
@@ -307,8 +307,8 @@ class BasicInfoSection(SpecificationFormSection):
         
         # 5. Safety limit input
         self.safety_limit_input = QDoubleSpinBox()
-        self.safety_limit_input.setRange(0, 10000)
-        self.safety_limit_input.setDecimals(2)
+        self.safety_limit_input.setRange(0, 99999)
+        self.safety_limit_input.setDecimals(3)
         self.safety_limit_input.setSuffix(" N")
         self.safety_limit_input.setMinimumWidth(200)
         right_layout.addRow("Safety Limit:", self.safety_limit_input)
@@ -388,23 +388,23 @@ class OptionalInfoSection(SpecificationFormSection):
         
         # Coil count input
         self.coil_count_input = QDoubleSpinBox()
-        self.coil_count_input.setRange(0, 100)
+        self.coil_count_input.setRange(0, 99999)
         self.coil_count_input.setDecimals(1)
         self.coil_count_input.setMinimumWidth(120)
         self.form_layout.addRow("Number of Coils:", self.coil_count_input)
         
         # Wire diameter input
         self.wire_dia_input = QDoubleSpinBox()
-        self.wire_dia_input.setRange(0, 100)
+        self.wire_dia_input.setRange(0, 99999)
         self.wire_dia_input.setSuffix(" mm")
-        self.wire_dia_input.setDecimals(2)
+        self.wire_dia_input.setDecimals(3)
         self.wire_dia_input.setMinimumWidth(120)
         self.form_layout.addRow("Wire Diameter:", self.wire_dia_input)
         
         # Outer diameter input
         self.outer_dia_input = QDoubleSpinBox()
-        self.outer_dia_input.setRange(0, 500)
-        self.outer_dia_input.setDecimals(2)
+        self.outer_dia_input.setRange(0, 99999)
+        self.outer_dia_input.setDecimals(3)
         self.outer_dia_input.setSuffix(" mm")
         self.outer_dia_input.setMinimumWidth(120)
         self.form_layout.addRow("Outer Diameter:", self.outer_dia_input)
@@ -475,16 +475,16 @@ class SetPointSection(SpecificationFormSection):
         """Create form inputs for set point."""
         # Position input
         self.position_input = QDoubleSpinBox()
-        self.position_input.setRange(0, 500)
-        self.position_input.setDecimals(2)
+        self.position_input.setRange(0, 99999)
+        self.position_input.setDecimals(3)
         self.position_input.setSuffix(" mm")
         self.position_input.setMinimumWidth(120)
         self.form_layout.addRow("Position:", self.position_input)
         
         # Load input
         self.load_input = QDoubleSpinBox()
-        self.load_input.setRange(0, 1000)
-        self.load_input.setDecimals(2)
+        self.load_input.setRange(0, 99999)
+        self.load_input.setDecimals(3)
         self.load_input.setSuffix(" N")
         self.load_input.setMinimumWidth(120)
         self.form_layout.addRow("Load:", self.load_input)
