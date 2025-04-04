@@ -87,9 +87,17 @@ def build_exe(one_file=False, console=False, clean=False):
         subprocess.run(command, check=True)
         print("Build completed successfully!")
         
-        # Print output location
+        # Create launcher batch file for one-file builds
         if one_file:
+            exe_path = os.path.join("dist", "SpringTestApp.exe")
+            wrapper_path = os.path.join("dist", "SpringTestApp_ClearChat.bat")
+            
+            with open(wrapper_path, "w") as f:
+                f.write(f'@echo off\n"{os.path.abspath(exe_path)}" --clear-chat\n')
+            
+            print(f"Created wrapper batch file at: {wrapper_path}")
             print("Executable created at: dist/SpringTestApp.exe")
+            print("You can also use the 'SpringTestApp_ClearChat.bat' to always clear chat history on startup")
         else:
             print("Executable created at: dist/SpringTestApp/SpringTestApp.exe")
     except subprocess.CalledProcessError as e:

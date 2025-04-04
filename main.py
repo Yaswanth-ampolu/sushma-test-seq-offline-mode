@@ -64,6 +64,11 @@ def parse_arguments():
         action="store_true",
         help="Reset all spring specifications to default values and remove all set points on startup"
     )
+    parser.add_argument(
+        "--clear-chat",
+        action="store_true",
+        help="Clear chat history on startup"
+    )
     return parser.parse_args()
 
 
@@ -95,6 +100,13 @@ def main():
     settings_service = SettingsService()
     export_service = ExportService()
     chat_service = ChatService(settings_service)
+    
+    # Clear chat history if running as executable or if clear-chat flag is specified
+    if getattr(sys, 'frozen', False) or args.clear_chat:
+        logging.info("Clearing chat history on startup (running as executable or --clear-chat specified)")
+        chat_service.clear_history()
+        # Save empty history to disk immediately to ensure it's persisted
+        chat_service.save_history()
     
     # Reset specifications if requested
     if args.reset_specs:

@@ -105,6 +105,14 @@ class ChatService:
     def clear_history(self) -> None:
         """Clear the chat history."""
         self.history = []
+        
+        # Ensure the empty history is immediately saved to disk
+        # This will overwrite the existing history file with an empty one
+        try:
+            self.save_history()
+            logging.info("Chat history cleared and saved to disk")
+        except Exception as e:
+            logging.error(f"Error saving empty chat history after clear: {str(e)}")
     
     def load_history(self) -> None:
         """Load chat history from file."""

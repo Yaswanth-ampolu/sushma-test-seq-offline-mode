@@ -113,6 +113,9 @@ class MainWindow(QMainWindow):
         # Clear chat history
         self.chat_service.clear_history()
         
+        # Save the empty chat history to disk immediately
+        self.chat_service.save_history()
+        
         # Update chat panel
         self.chat_results_container.refresh_chat_display()
     
