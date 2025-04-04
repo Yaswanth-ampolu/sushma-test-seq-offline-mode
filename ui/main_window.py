@@ -4,6 +4,7 @@ Contains the main window class and initialization.
 """
 import sys
 import os
+import logging
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                             QMessageBox, QApplication, QTabWidget)
 from PyQt5.QtCore import Qt, pyqtSlot
@@ -47,7 +48,9 @@ class MainWindow(QMainWindow):
         """Initialize the UI."""
         # Set window properties
         self.setWindowTitle(f"{APP_TITLE} v{APP_VERSION}")
-        self.setGeometry(100, 100, *APP_WINDOW_SIZE)
+        
+        # Load saved window geometry (position and size)
+        self.restore_window_geometry()
         
         # Set window icon
         icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "icon.ico")
@@ -144,12 +147,67 @@ class MainWindow(QMainWindow):
         from ui.styles import apply_theme
         apply_theme(self)
     
+    def restore_window_geometry(self):
+        """Restore window position and size from settings."""
+        try:
+            # Get window geometry from settings
+            geometry = self.settings_service.get_window_geometry()
+            
+            # Apply window position and size
+            self.setGeometry(
+                geometry.get("x", 100),
+                geometry.get("y", 100),
+                geometry.get("width", 1200),
+                geometry.get("height", 800)
+            )
+            
+            # Apply maximized state if needed
+            if geometry.get("is_maximized", False):
+                self.showMaximized()
+                
+            # Log the restoration
+            logging.info(f"Restored window geometry: {geometry}")
+        except Exception as e:
+            # Log the error and use default values
+            logging.error(f"Error restoring window geometry: {e}")
+            self.setGeometry(100, 100, *APP_WINDOW_SIZE)
+    
+    def save_window_geometry(self):
+        """Save current window position and size to settings."""
+        try:
+            # Check if window is maximized
+            is_maximized = self.isMaximized()
+            
+            # Get current geometry
+            geometry = self.geometry()
+            
+            # Create geometry dictionary
+            geometry_dict = {
+                "x": geometry.x(),
+                "y": geometry.y(),
+                "width": geometry.width(),
+                "height": geometry.height(),
+                "is_maximized": is_maximized
+            }
+            
+            # Save to settings
+            self.settings_service.set_window_geometry(geometry_dict)
+            
+            # Log the save
+            logging.info(f"Saved window geometry: {geometry_dict}")
+        except Exception as e:
+            # Log the error
+            logging.error(f"Error saving window geometry: {e}")
+    
     def closeEvent(self, event):
         """Handle window close event.
         
         Args:
             event: Close event.
         """
+        # Save window geometry
+        self.save_window_geometry()
+        
         # Save settings
         self.settings_service.save_settings()
         
@@ -158,6 +216,34 @@ class MainWindow(QMainWindow):
         
         # Accept the event
         event.accept()
+        
+    def resizeEvent(self, event):
+        """Handle window resize events.
+        
+        Args:
+            event: Resize event.
+        """
+        # Save geometry only if not maximized
+        # This avoids saving incorrect sizes during maximize/restore operations
+        if not self.isMaximized():
+            self.save_window_geometry()
+        
+        # Let the parent class handle the event
+        super().resizeEvent(event)
+        
+    def moveEvent(self, event):
+        """Handle window move events.
+        
+        Args:
+            event: Move event.
+        """
+        # Save geometry only if not maximized
+        # This avoids saving incorrect positions during maximize/restore operations
+        if not self.isMaximized():
+            self.save_window_geometry()
+        
+        # Let the parent class handle the event
+        super().moveEvent(event)
 
     def updateWindowTitle(self, status=None):
         """Update the window title, possibly with status information."""
@@ -199,7 +285,8 @@ def create_main_window(settings_service, sequence_generator, chat_service, expor
         export_service=export_service
     )
     
-    # Configure window (maximize, etc.)
+    # The position, size and maximized state are now handled in the restore_window_geometry method
+    # Simply show the window - it will display with the correct settings
     window.show()
     
     return window 

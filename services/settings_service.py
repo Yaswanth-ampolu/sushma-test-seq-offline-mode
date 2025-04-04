@@ -35,7 +35,14 @@ class SettingsService:
         self.settings = {
             "api_key": "",
             "theme": "light",
-            "spring_specification": None
+            "spring_specification": None,
+            "window_geometry": {
+                "x": 100,
+                "y": 100,
+                "width": 1200,
+                "height": 800,
+                "is_maximized": False
+            }
         }
         
         # Path to settings file
@@ -51,6 +58,16 @@ class SettingsService:
         # Initialize spring specification if it doesn't exist
         if "spring_specification" not in self.settings or self.settings["spring_specification"] is None:
             self.settings["spring_specification"] = SpringSpecification().to_dict()
+            
+        # Ensure window geometry exists
+        if "window_geometry" not in self.settings:
+            self.settings["window_geometry"] = {
+                "x": 100,
+                "y": 100,
+                "width": 1200,
+                "height": 800,
+                "is_maximized": False
+            }
     
     def _ensure_data_dir(self):
         """Ensure the data directory exists.
@@ -485,7 +502,14 @@ class SettingsService:
         self.settings = {
             "api_key": "",
             "theme": "light",
-            "spring_specification": None
+            "spring_specification": None,
+            "window_geometry": {
+                "x": 100,
+                "y": 100,
+                "width": 1200,
+                "height": 800,
+                "is_maximized": False
+            }
         }
         
         # Reload settings from disk
@@ -496,4 +520,43 @@ class SettingsService:
             logging.info("No spring specification found after reset, using empty default")
             self.settings["spring_specification"] = SpringSpecification(create_defaults=False).to_dict()
             
-        logging.info("Settings service state has been reset") 
+        logging.info("Settings service state has been reset")
+    
+    def set_window_geometry(self, geometry):
+        """Set the window geometry.
+        
+        Args:
+            geometry: Dictionary containing window geometry (x, y, width, height, is_maximized).
+            
+        Returns:
+            True if saved successfully, False otherwise.
+        """
+        # Update window geometry in settings
+        self.settings["window_geometry"] = geometry
+        
+        # Log the operation
+        logging.info(f"Saving window geometry: {geometry}")
+        
+        # Save the settings to disk
+        return self.save_settings()
+    
+    def get_window_geometry(self):
+        """Get the window geometry.
+        
+        Returns:
+            Dictionary containing window geometry (x, y, width, height, is_maximized).
+        """
+        # Get window geometry from settings
+        geometry = self.settings.get("window_geometry", {})
+        
+        # Use default values if missing
+        if not geometry:
+            geometry = {
+                "x": 100,
+                "y": 100,
+                "width": 1200, 
+                "height": 800,
+                "is_maximized": False
+            }
+        
+        return geometry 
