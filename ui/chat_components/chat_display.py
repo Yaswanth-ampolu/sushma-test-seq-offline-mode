@@ -131,13 +131,13 @@ class ChatBubbleDisplay(QWebEngineView):
                 
                 .timestamp {
                     font-size: 0.7rem;
-                    color: rgba(255, 255, 255, 0.7);
+                    color: #000000 !important;
                     margin-top: 4px;
                     text-align: right;
                 }
                 
                 .assistant-timestamp {
-                    color: 
+                    color: #000000 !important;
                     margin-left: 8px;
                 }
                 
@@ -308,7 +308,7 @@ class ChatBubbleDisplay(QWebEngineView):
                     
                     
                     if i == len(messages) - 1 and formatted_time:
-                        html_parts.append(f'<div class="timestamp assistant-timestamp">{formatted_time}</div>')
+                        html_parts.append(f'<div class="timestamp assistant-timestamp" style="color: #000000 !important;">{formatted_time}</div>')
             
             html_parts.append('</div>')
         

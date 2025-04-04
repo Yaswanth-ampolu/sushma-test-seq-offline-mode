@@ -877,7 +877,7 @@ class ChatPanel(QWidget):
             if "position" in set_point and "load" in set_point:
                 set_point["enabled"] = True
                 if "tolerance" not in set_point:
-                    set_point["tolerance"] = 10.0  # Default tolerance
+                    set_point["tolerance"] = 5.0  # Default tolerance
                 parsed_data["set_points"].append(set_point)
         
         # Update specifications if we found any
@@ -1036,6 +1036,18 @@ class ChatPanel(QWidget):
     
     def show_specification_form(self):
         """Show the specification form in the chat panel."""
+        # Add a message to indicate processing
+        self.chat_service.add_message(
+            "assistant", 
+            "Opening specifications form..."
+        )
+        self.refresh_chat_display()
+        
+        # Add a delay of 3.0 seconds to simulate processing time
+        QTimer.singleShot(3000, self._display_specification_form)
+    
+    def _display_specification_form(self):
+        """Actually display the specification form after delay."""
         # Create form manager if needed
         self._create_spec_form_manager()
         
@@ -1149,8 +1161,8 @@ class ChatPanel(QWidget):
             component_type=basic_info.get("component_type", "Compression"),
             first_speed=basic_info.get("first_speed", 0.0),
             second_speed=basic_info.get("second_speed", 0.0),
-            # Move safety limit to basic info
-            safety_limit=optional_info.get("safety_limit", 0.0),
+            # Fix: Get safety limit from basic_info instead of optional_info
+            safety_limit=basic_info.get("safety_limit", 0.0),
             
             # Optional info parameters
             coil_count=optional_info.get("coil_count", 0.0),
@@ -1188,7 +1200,7 @@ class ChatPanel(QWidget):
                     index=index,
                     position=sp_data.get("position", 0.0),
                     load=sp_data.get("load", 0.0),
-                    tolerance=sp_data.get("tolerance", 10.0),
+                    tolerance=sp_data.get("tolerance", 5.0),
                     enabled=True,
                     scrag_enabled=sp_data.get("scrag_enabled", False),
                     scrag_value=sp_data.get("scrag_value", 0.0)
