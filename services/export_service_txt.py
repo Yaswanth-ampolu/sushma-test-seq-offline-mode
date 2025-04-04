@@ -695,14 +695,14 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
         
         with open(new_file_path, "w") as f:
             # Write header with mapping from specification panel values - with vertical pipe separators
-            f.write(f"1 | Part Number | -- | {part_number} |\n")
-            f.write(f"2 | Model Number | -- | {part_name} |\n")
-            f.write(f"3 | Free Length | mm | {free_length} |\n")
+            f.write(f"1|Part Number|--|{part_number}|\n")
+            f.write(f"2|Model Number|--|{part_name}|\n")
+            f.write(f"3|Free Length|mm|{free_length}|\n")
             
             # Only include test mode and safety limit if they exist
             test_mode_text = test_mode if test_mode else ""
             safety_limit_text = safety_limit if safety_limit else ""
-            f.write(f"<Test Sequence> | N | -- | {test_mode_text} | {safety_limit_text} | 100 |\n\n")
+            f.write(f"<Test Sequence>|N|--|{test_mode_text}|{safety_limit_text}|100|\n\n")
             
             # Get rows from sequence
             rows = sequence.rows
@@ -717,7 +717,7 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
                 speed_rpm = row.get('Speed rpm', '')  # Extract Speed rpm field
                 
                 # Modified row string format with vertical pipes, including Speed rpm
-                row_str = f"{cmd} | {desc} | {condition} | {unit} | {tolerance} | {speed_rpm} |\n"
+                row_str = f"{cmd}|{desc}|{condition}|{unit}|{tolerance}|{speed_rpm}|\n"
                 f.write(row_str)
             
             logger.debug(f"TXT export completed successfully to {new_file_path}")

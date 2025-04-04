@@ -62,7 +62,7 @@ class SetPointWidget(QGroupBox):
         
         # Position input
         self.position_input = QDoubleSpinBox()
-        self.position_input.setRange(0, 99999)
+        self.position_input.setRange(-99999, 99999)
         self.position_input.setValue(self.set_point.position_mm)
         self.position_input.setSuffix(" mm")
         self.position_input.setDecimals(3)
@@ -71,7 +71,7 @@ class SetPointWidget(QGroupBox):
         
         # Load input
         self.load_input = QDoubleSpinBox()
-        self.load_input.setRange(0, 99999)
+        self.load_input.setRange(-99999, 99999)
         self.load_input.setValue(self.set_point.load_n)
         self.load_input.setSuffix(" N")
         self.load_input.setDecimals(3)
@@ -293,7 +293,7 @@ class SpecificationsPanel(QWidget):
         
         # Free length input
         self.free_length_input = QDoubleSpinBox()
-        self.free_length_input.setRange(0, 99999)  # Allow up to 6 digits
+        self.free_length_input.setRange(-99999, 99999)  # Allow up to 6 digits
         self.free_length_input.setSuffix(" mm")
         self.free_length_input.setDecimals(3)  # Allow 3 decimal places
         self.free_length_input.valueChanged.connect(self.on_basic_info_changed)
@@ -327,7 +327,7 @@ class SpecificationsPanel(QWidget):
         
         # First Speed input
         self.first_speed_input = QDoubleSpinBox()
-        self.first_speed_input.setRange(0, 99999) # Adjust range as needed
+        self.first_speed_input.setRange(-99999, 99999) # Adjust range as needed
         self.first_speed_input.setDecimals(1)
         self.first_speed_input.setSuffix(" mm/s")
         self.first_speed_input.valueChanged.connect(self.on_basic_info_changed)
@@ -335,7 +335,7 @@ class SpecificationsPanel(QWidget):
         
         # Second Speed input
         self.second_speed_input = QDoubleSpinBox()
-        self.second_speed_input.setRange(0, 99999) # Adjust range as needed
+        self.second_speed_input.setRange(-99999, 99999) # Adjust range as needed
         self.second_speed_input.setDecimals(1)
         self.second_speed_input.setSuffix(" mm/s")
         self.second_speed_input.valueChanged.connect(self.on_basic_info_changed)
@@ -343,7 +343,7 @@ class SpecificationsPanel(QWidget):
         
         # Safety limit input moved to basic info
         self.safety_limit_input = QDoubleSpinBox()
-        self.safety_limit_input.setRange(0, 99999)
+        self.safety_limit_input.setRange(-99999, 99999)
         self.safety_limit_input.setSuffix(" N")
         self.safety_limit_input.setDecimals(2)
         self.safety_limit_input.valueChanged.connect(self.on_basic_info_changed)
@@ -369,14 +369,14 @@ class SpecificationsPanel(QWidget):
         
         # Coil count input
         self.coil_count_input = QDoubleSpinBox()
-        self.coil_count_input.setRange(0, 99999)
+        self.coil_count_input.setRange(-99999, 99999)
         self.coil_count_input.setDecimals(1)
         self.coil_count_input.valueChanged.connect(self.on_basic_info_changed)
         optional_layout.addRow("Number of Coils:", self.coil_count_input)
         
         # Wire diameter input
         self.wire_dia_input = QDoubleSpinBox()
-        self.wire_dia_input.setRange(0, 99999)
+        self.wire_dia_input.setRange(-99999, 99999)
         self.wire_dia_input.setSuffix(" mm")
         self.wire_dia_input.setDecimals(2)
         self.wire_dia_input.valueChanged.connect(self.on_basic_info_changed)
@@ -384,7 +384,7 @@ class SpecificationsPanel(QWidget):
         
         # Outer diameter input
         self.outer_dia_input = QDoubleSpinBox()
-        self.outer_dia_input.setRange(0, 99999)
+        self.outer_dia_input.setRange(-99999, 99999)
         self.outer_dia_input.setDecimals(2)
         self.outer_dia_input.valueChanged.connect(self.on_basic_info_changed)
         optional_layout.addRow("Outer Diameter:", self.outer_dia_input)
