@@ -461,6 +461,22 @@ class ChatPanel(QWidget):
             # Handle specification update request
             self._handle_spec_update_request()
             return
+            
+        # Check if this might be an image upload request
+        if self._is_image_upload_request(user_input):
+            # Add user message to chat
+            self.chat_service.add_message("user", user_input)
+            
+            # Add beta feature message to chat
+            beta_message = ("I understand you're trying to upload an image, diagram, or sketch. "
+                           "This feature is currently in beta and will be available soon! "
+                           "We're working hard to bring you image upload capabilities in a future update. "
+                           "In the meantime, you can describe your spring specifications in text, "
+                           "and I'll help you set them up.")
+            
+            self.chat_service.add_message("assistant", beta_message)
+            self.refresh_chat_display()
+            return
         
         # Add message to chat
         self.chat_service.add_message("user", user_input)
@@ -1386,6 +1402,37 @@ class ChatPanel(QWidget):
                 
         # Don't trigger for questions about specs or general mentions
         # This is a deliberate limitation to prevent false positives
+        return False
+
+    def _is_image_upload_request(self, user_input):
+        """Check if the user input is a request to upload images, diagrams, or sketches.
+        
+        Args:
+            user_input: The user's input text
+        
+        Returns:
+            True if it's a request to upload images, False otherwise
+        """
+        # Detect mentions of uploading images or related content
+        image_upload_phrases = [
+            "upload image", "upload diagram", "upload picture", "upload sketch",
+            "upload a image", "upload a diagram", "upload a picture", "upload a sketch",
+            "can i upload", "how to upload", "upload my image", "upload my diagram",
+            "upload my sketch", "upload my picture", "add image", "add diagram",
+            "add picture", "add sketch", "attach image", "attach diagram",
+            "attach picture", "attach sketch", "insert image", "insert diagram",
+            "insert picture", "insert sketch", "upload pdf", "upload drawing",
+            "share image", "share diagram", "share picture", "share sketch",
+            "upload a file", "upload an image", "show you a picture", "show you an image", 
+            "show you a diagram", "show you a sketch"
+        ]
+        
+        # Check for phrases in user input
+        user_input_lower = user_input.lower()
+        for phrase in image_upload_phrases:
+            if phrase in user_input_lower:
+                return True
+                
         return False
         
     def _handle_spec_update_request(self):
