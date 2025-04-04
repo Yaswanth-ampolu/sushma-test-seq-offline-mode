@@ -1039,12 +1039,26 @@ class ChatPanel(QWidget):
         # Add a message to indicate processing
         self.chat_service.add_message(
             "assistant", 
-            "Opening specifications form..."
+            "Processing your message with FTS.ai..."
         )
         self.refresh_chat_display()
         
         # Add a delay of 3.0 seconds to simulate processing time
-        QTimer.singleShot(3000, self._display_specification_form)
+        QTimer.singleShot(3000, self._display_specification_form_and_remove_processing)
+    
+    def _display_specification_form_and_remove_processing(self):
+        """Remove the processing message and display the specification form."""
+        # Remove the processing message
+        last_message = self.chat_service.get_last_message()
+        if last_message and last_message.role == "assistant" and "Processing your message with FTS.ai..." in last_message.content:
+            # Remove the processing message from history
+            self.chat_service.history.pop()
+            print("DEBUG: Removed 'Processing your message with FTS.ai...' placeholder")
+            # Refresh chat display to remove the message
+            self.refresh_chat_display()
+        
+        # Now display the form
+        self._display_specification_form()
     
     def _display_specification_form(self):
         """Actually display the specification form after delay."""
