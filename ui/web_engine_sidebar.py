@@ -1032,19 +1032,27 @@ class WebEngineSidebar(QWidget):
         format_name = self.format_combo.currentText()
         file_extension = FILE_FORMATS.get(format_name, ".csv")
         
-        # Show file dialog
-        file_path, _ = QFileDialog.getSaveFileName(self, 
-                                                 "Export Sequence", 
-                                                 "", 
-                                                 f"{format_name} Files (*{file_extension});;All Files (*)")
+        # Use the fixed export directory instead of showing file dialog
+        import os
+        import datetime
         
-        if not file_path:
-            # User cancelled
-            return
+        # Define fixed export directory
+        export_directory = r"C:\SI\SI-FTS Software-NPD\Master Data"
         
-        # Add extension if not present
-        if not any(file_path.endswith(ext) for ext in [".csv", ".json", ".xlsx", ".xls", ".txt"]):
-            file_path += file_extension
+        # Create the directory if it doesn't exist
+        if not os.path.exists(export_directory):
+            try:
+                os.makedirs(export_directory)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not create export directory: {str(e)}")
+                return
+        
+        # Generate a default filename using timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"spring_sequence_{timestamp}{file_extension}"
+        
+        # Create the full file path
+        file_path = os.path.join(export_directory, default_filename)
         
         # Export the sequence
         if self.export_service:
@@ -1057,7 +1065,7 @@ class WebEngineSidebar(QWidget):
                 if format_name == "TXT" and message:
                     QMessageBox.information(self, "Export Successful", message)
                 else:
-                    QMessageBox.information(self, "Export Successful", "Sequence exported successfully.")
+                    QMessageBox.information(self, "Export Successful", f"Sequence exported to {file_path}")
             else:
                 QMessageBox.critical(self, "Export Failed", f"Failed to export sequence: {message}")
     
@@ -1072,13 +1080,19 @@ class WebEngineSidebar(QWidget):
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             default_filename = f"spring_sequence_{timestamp}.csv"
             
-            # Use the documents folder as default location
+            # Use the fixed export directory
             import os
-            documents_path = os.path.expanduser("~/Documents")
-            if not os.path.exists(documents_path):
-                documents_path = os.path.expanduser("~")
+            export_directory = r"C:\SI\SI-FTS Software-NPD\Master Data"
             
-            file_path = os.path.join(documents_path, default_filename)
+            # Create the directory if it doesn't exist
+            if not os.path.exists(export_directory):
+                try:
+                    os.makedirs(export_directory)
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Could not create export directory: {str(e)}")
+                    return
+            
+            file_path = os.path.join(export_directory, default_filename)
             
             # Export the sequence
             success, error_msg = self.export_service.export_sequence(

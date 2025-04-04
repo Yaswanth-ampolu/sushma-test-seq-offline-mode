@@ -383,17 +383,27 @@ class CollapsibleSidebar(QWidget):
         # Debug print to verify format and extension
         print(f"Exporting with format: {format_name}, extension: {file_extension}")
         
-        # Get file name from user
-        file_name, _ = QFileDialog.getSaveFileName(
-            self, "Export Sequence", "", f"{format_name} Files (*{file_extension})"
-        )
+        # Use the fixed export directory instead of showing file dialog
+        import os
+        import datetime
         
-        if not file_name:
-            return  # User cancelled
+        # Define fixed export directory
+        export_directory = r"C:\SI\SI-FTS Software-NPD\Master Data"
         
-        # Add extension if not present
-        if not file_name.endswith(file_extension):
-            file_name += file_extension
+        # Create the directory if it doesn't exist
+        if not os.path.exists(export_directory):
+            try:
+                os.makedirs(export_directory)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not create export directory: {str(e)}")
+                return
+        
+        # Generate a default filename using timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"spring_sequence_{timestamp}{file_extension}"
+        
+        # Create the full file path
+        file_name = os.path.join(export_directory, default_filename)
         
         # Export the sequence
         success, message = self.export_service.export_sequence(
@@ -469,13 +479,19 @@ class CollapsibleSidebar(QWidget):
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             default_filename = f"spring_sequence_{timestamp}.csv"
             
-            # Use the documents folder as default location
+            # Use the fixed export directory
             import os
-            documents_path = os.path.expanduser("~/Documents")
-            if not os.path.exists(documents_path):
-                documents_path = os.path.expanduser("~")
+            export_directory = r"C:\SI\SI-FTS Software-NPD\Master Data"
             
-            file_path = os.path.join(documents_path, default_filename)
+            # Create the directory if it doesn't exist
+            if not os.path.exists(export_directory):
+                try:
+                    os.makedirs(export_directory)
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Could not create export directory: {str(e)}")
+                    return
+            
+            file_path = os.path.join(export_directory, default_filename)
             
             # Export the sequence
             success, error_msg = self.export_service.export_sequence(
