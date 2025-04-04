@@ -226,10 +226,10 @@ class SpecificationsPanel(QWidget):
         self.sequence_generator = sequence_generator
         self.chat_service = chat_service
         self.current_specifications = SpringSpecification(
-            part_name="Demo Spring",
-            part_number="Demo Spring-1",
-            free_length_mm=58.0,
-            safety_limit_n=300.0
+            part_name="",
+            part_number="",
+            free_length_mm=0.0,
+            safety_limit_n=0.0
         )
         
         
@@ -927,7 +927,7 @@ class SpecificationsPanel(QWidget):
             for i, line in enumerate(lines):
                 load_match = re.search(r"Set\s+Point\-(\d+)\s+Load\s+In\s+N:\s*([\d.]+)(?:±([\d.]+)%)?", line, re.IGNORECASE)
                 if load_match:
-                    tolerance = 10.0
+                    tolerance = 5.0
                     if load_match.group(3):
                         tolerance = float(load_match.group(3))
                     load_matches.append((i, int(load_match.group(1)), float(load_match.group(2)), tolerance))
@@ -953,7 +953,7 @@ class SpecificationsPanel(QWidget):
                 index = int(match.group(1))
                 position = float(match.group(2))
                 load = float(match.group(3))
-                tolerance = 10.0
+                tolerance = 5.0
                 if match.group(4):
                     tolerance = float(match.group(4))
                 
@@ -1091,7 +1091,7 @@ class SpecificationsPanel(QWidget):
                     index=index,
                     position=sp_data["position"],
                     load=sp_data["load"],
-                    tolerance=sp_data.get("tolerance", 10.0),
+                    tolerance=sp_data.get("tolerance", 5.0),
                     enabled=sp_data.get("enabled", True)
                 )
             
@@ -1396,7 +1396,7 @@ class SpecificationsPanel(QWidget):
                 load_match = re.search(pattern, cleaned, re.IGNORECASE)
                 if load_match:
                     set_points[index]["load"] = load_match.group(1).strip()
-                    set_points[index]["tolerance"] = load_match.group(2).strip() if load_match.group(2) else "10"
+                    set_points[index]["tolerance"] = load_match.group(2).strip() if load_match.group(2) else "5"
                     break
         
         # Build the formatted output with consistent format

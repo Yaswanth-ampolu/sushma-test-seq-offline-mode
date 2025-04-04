@@ -75,7 +75,7 @@ class SetPoint:
     """Represents a set point for spring testing."""
     position_mm: float
     load_n: float
-    tolerance_percent: float = 10.0
+    tolerance_percent: float = 5.0
     enabled: bool = True
     scrag_enabled: bool = False
     scrag_value: float = 2.0  # Number of times scragging should be performed (should be used as an integer)
@@ -97,7 +97,7 @@ class SetPoint:
         return cls(
             position_mm=data.get("position_mm", 0.0),
             load_n=data.get("load_n", 0.0),
-            tolerance_percent=data.get("tolerance_percent", 10.0),
+            tolerance_percent=data.get("tolerance_percent", 5.0),
             enabled=data.get("enabled", True),
             scrag_enabled=data.get("scrag_enabled", False),
             scrag_value=data.get("scrag_value", 2.0)

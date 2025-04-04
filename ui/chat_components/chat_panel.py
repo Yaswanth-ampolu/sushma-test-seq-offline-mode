@@ -877,7 +877,7 @@ class ChatPanel(QWidget):
             if "position" in set_point and "load" in set_point:
                 set_point["enabled"] = True
                 if "tolerance" not in set_point:
-                    set_point["tolerance"] = 10.0  # Default tolerance
+                    set_point["tolerance"] = 5.0  # Default tolerance
                 parsed_data["set_points"].append(set_point)
         
         # Update specifications if we found any
@@ -1188,7 +1188,7 @@ class ChatPanel(QWidget):
                     index=index,
                     position=sp_data.get("position", 0.0),
                     load=sp_data.get("load", 0.0),
-                    tolerance=sp_data.get("tolerance", 10.0),
+                    tolerance=sp_data.get("tolerance", 5.0),
                     enabled=True,
                     scrag_enabled=sp_data.get("scrag_enabled", False),
                     scrag_value=sp_data.get("scrag_value", 0.0)

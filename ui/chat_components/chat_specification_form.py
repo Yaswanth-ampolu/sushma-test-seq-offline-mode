@@ -492,7 +492,7 @@ class SetPointSection(SpecificationFormSection):
         # Tolerance input
         self.tolerance_input = QDoubleSpinBox()
         self.tolerance_input.setRange(0, 100)
-        self.tolerance_input.setValue(10.0)
+        self.tolerance_input.setValue(5.0)
         self.tolerance_input.setSuffix(" %")
         self.tolerance_input.setDecimals(1)
         self.tolerance_input.setMinimumWidth(120)

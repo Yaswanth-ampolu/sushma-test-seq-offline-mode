@@ -378,7 +378,7 @@ class SettingsService:
         # Save the updated specification
         return self.set_spring_specification(specification)
     
-    def update_set_point(self, index, position, load, tolerance=10.0, enabled=True, scrag_enabled=False, scrag_value=0.0):
+    def update_set_point(self, index, position, load, tolerance=5.0, enabled=True, scrag_enabled=False, scrag_value=0.0):
         """Update a set point in the spring specification.
         
         Args:
@@ -463,7 +463,7 @@ class SettingsService:
         spec = self.get_spring_specification()
         
         # Add a new set point with default values including scrag parameters
-        new_point = SetPoint(0.0, 0.0, 10.0, True, False, 0.0)
+        new_point = SetPoint(0.0, 0.0, 5.0, True, False, 0.0)
         spec.set_points.append(new_point)
         
         print(f"Added new set point, total now: {len(spec.set_points)}")
