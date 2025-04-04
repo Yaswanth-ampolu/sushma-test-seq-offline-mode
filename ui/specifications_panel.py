@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdi
                            QFormLayout, QGroupBox, QPushButton, QScrollArea, 
                            QTabWidget, QComboBox, QDoubleSpinBox, QCheckBox,
                            QFrame, QSpacerItem, QSizePolicy, QMessageBox, QTextEdit,
-                           QFileDialog)
+                           QFileDialog, QSpinBox)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 import re
@@ -96,11 +96,12 @@ class SetPointWidget(QGroupBox):
         self.scrag_checkbox.stateChanged.connect(self.on_scrag_enabled_changed)
         scrag_layout.addWidget(self.scrag_checkbox)
         
-        # Scrag value input
-        self.scrag_input = QDoubleSpinBox()
-        self.scrag_input.setRange(0, 500)
-        self.scrag_input.setValue(self.set_point.scrag_value)
-        self.scrag_input.setDecimals(2)
+        # Changed from QDoubleSpinBox to QSpinBox for integer repetitions
+        self.scrag_input = QSpinBox()
+        self.scrag_input.setRange(1, 20)  # Allow 1 to 20 repetitions
+        # Convert the float value to int for display, ensuring minimum of 1
+        scrag_value_int = max(1, int(self.set_point.scrag_value))
+        self.scrag_input.setValue(scrag_value_int)
         self.scrag_input.setEnabled(self.set_point.scrag_enabled)
         self.scrag_input.valueChanged.connect(self.on_scrag_value_changed)
         scrag_layout.addWidget(self.scrag_input)

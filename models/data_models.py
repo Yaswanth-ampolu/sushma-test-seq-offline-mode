@@ -78,7 +78,7 @@ class SetPoint:
     tolerance_percent: float = 10.0
     enabled: bool = True
     scrag_enabled: bool = False
-    scrag_value: float = 0.0
+    scrag_value: float = 2.0  # Number of times scragging should be performed (should be used as an integer)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the set point to a dictionary."""
@@ -100,7 +100,7 @@ class SetPoint:
             tolerance_percent=data.get("tolerance_percent", 10.0),
             enabled=data.get("enabled", True),
             scrag_enabled=data.get("scrag_enabled", False),
-            scrag_value=data.get("scrag_value", 0.0)
+            scrag_value=data.get("scrag_value", 2.0)
         )
 
 
@@ -251,7 +251,7 @@ class SpringSpecification:
                 text += f"Set Point-{i} Position: {sp.position_mm} {self.unit}\n"
                 text += f"Set Point-{i} Load: {sp.load_n}±{sp.tolerance_percent}% {self.force_unit}\n"
                 if sp.scrag_enabled:
-                    text += f"Set Point-{i} Scrag: {sp.scrag_value} {self.unit}\n"
+                    text += f"Set Point-{i} Scrag: {int(sp.scrag_value)}\n"
         
         text += f"Safety Limit: {self.safety_limit_n} {self.force_unit}\n"
         text += f"Displacement Unit: {self.unit}\n"

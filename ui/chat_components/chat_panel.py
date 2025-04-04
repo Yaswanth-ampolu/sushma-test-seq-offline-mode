@@ -1149,8 +1149,8 @@ class ChatPanel(QWidget):
             component_type=basic_info.get("component_type", "Compression"),
             first_speed=basic_info.get("first_speed", 0.0),
             second_speed=basic_info.get("second_speed", 0.0),
-            # Move safety limit to basic info
-            safety_limit=optional_info.get("safety_limit", 0.0),
+            # Fix: Get safety limit from basic_info instead of optional_info
+            safety_limit=basic_info.get("safety_limit", 0.0),
             
             # Optional info parameters
             coil_count=optional_info.get("coil_count", 0.0),

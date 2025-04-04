@@ -170,7 +170,13 @@ COMMAND USAGE GUIDELINES:
 - **TD (Time Delay):** Insert delay as specified.
 - **PMsg (User Message):** Use `"Test Completed"` in the condition field; empty speed.
 
-STANDARD SEQUENCE ORDERING:
+TEST TYPE PATTERNS & CONDITIONAL LOGIC:
+- If scragging is specified, perform the scragging sequence first:
+  * Use the position value from the last set point with scragging enabled.
+  * Execute the scragging cycle with the specified number of repetitions.
+- After scragging (if specified) or immediately following **FL(P)** (if scragging is not specified), process the set points sequentially.
+
+STANDARD_SEQUENCE_ORDERING:
 When test mode is height and component type is compression:
 1. INITIAL COMMANDS (Fixed):
    ZF → TH → FL(P)
@@ -188,16 +194,6 @@ When test mode is height and component type is compression:
    - Mv(P) to free length
    - PMsg for completion
 
-FORCE MEASUREMENT TOLERANCES:
-- For each `Fr(P)` command, include tolerances if provided by the user or derived from specifications.
-- Format tolerances as `"value(min,max)"` (e.g., `"23.6(21.24,26.04)"`).
-- Leave the tolerance field empty (`""`) only if no tolerance is specified.
-
-FREE LENGTH TOLERANCES:
-- For the `FL(P)` command, include tolerances if provided by the user or derived from specifications.
-- Format tolerances as `"value(min,max)"` (e.g., `"56.0(53.2,58.8)"`).
-- Leave the tolerance field empty (`""`) only if no tolerance is specified.
-
 IMPORTANT SCRAGGING RULES:
 1. Scragging MUST occur AFTER FL(P) and BEFORE set point processing.
 2. Scragging sequence requires EXACTLY 4 commands in order:
@@ -207,6 +203,16 @@ IMPORTANT SCRAGGING RULES:
    - Scrag command referencing the first Mv(P)
 3. The Scrag command MUST reference the row number of the first Mv(P).
 4. Return to free length MUST use the same value as FL(P).
+
+FORCE MEASUREMENT TOLERANCES:
+- For each `Fr(P)` command, include tolerances if provided by the user or derived from specifications.
+- Format tolerances as `"value(min,max)"` (e.g., `"23.6(21.24,26.04)"`).
+- Leave the tolerance field empty (`""`) only if no tolerance is specified.
+
+FREE LENGTH TOLERANCES:
+- For the `FL(P)` command, include tolerances if provided by the user or derived from specifications.
+- Format tolerances as `"value(min,max)"` (e.g., `"56.0(53.2,58.8)"`).
+- Leave the tolerance field empty (`""`) only if no tolerance is specified.
 
 EXAMPLE CORRECT SEQUENCE:
 Given:
@@ -237,8 +243,9 @@ This example demonstrates:
 - Scragging uses the position from Set Point 1 (60.0 mm).
 - The Scrag command references R03 with 2 repetitions.
 - Set points are processed sequentially after scragging.
-"""
 
+Ensure the model dynamically extracts and applies these rules based on the user's input specifications.
+"""
 # User prompt template for API
 USER_PROMPT_TEMPLATE = """ {parameter_text}
 

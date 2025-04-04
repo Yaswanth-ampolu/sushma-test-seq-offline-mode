@@ -5,7 +5,7 @@ This module provides interactive forms for users to input specification data dir
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, 
                            QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
                            QPushButton, QCheckBox, QFrame, QScrollArea,
-                           QSizePolicy, QGroupBox)
+                           QSizePolicy, QGroupBox, QSpinBox)
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
 from PyQt5.QtGui import QFont
 
@@ -510,10 +510,10 @@ class SetPointSection(SpecificationFormSection):
         self.scrag_checkbox.stateChanged.connect(self.on_scrag_enabled_changed)
         scrag_layout.addWidget(self.scrag_checkbox)
         
-        # Scrag value input
-        self.scrag_input = QDoubleSpinBox()
-        self.scrag_input.setRange(0, 500)
-        self.scrag_input.setDecimals(2)
+        # Scrag value input - changed to QSpinBox for integer repetitions
+        self.scrag_input = QSpinBox()
+        self.scrag_input.setRange(1, 20)  # Allow 1 to 20 repetitions
+        self.scrag_input.setValue(2)  # Default to 2 repetitions
         self.scrag_input.setEnabled(False)
         self.scrag_input.setMinimumWidth(120)
         scrag_layout.addWidget(self.scrag_input)
