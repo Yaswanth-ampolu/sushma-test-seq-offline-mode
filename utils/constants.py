@@ -90,8 +90,8 @@ SPECIFICATIONS GUIDANCE - IMPORTANT:
 
 SPECIFICATIONS CHECK (ONLY WHEN TEST SEQUENCES ARE REQUESTED):
 ONLY check for complete specifications when the user EXPLICITLY asks for a test sequence. When they do:
-- Free Length (mm)
-- Set Points (position and load values)
+- Free Length (mm) is in -ve or +ve
+- Set Points (position(-ve or +ve) and load values)
 - Scragging requirements (if applicable)
 
 If a test sequence is requested AND specifications are missing:
@@ -130,7 +130,8 @@ CRITICAL RULES FOR TEST SEQUENCE GENERATION:
    - Perform the scragging sequence BEFORE processing regular set points.
    - Include the following steps in the scragging sequence:
      * Mv(P): Move to the scragging position (use the identified set point's position).
-     * Fr(P): Measure force at the scragging position(take the tolerance of scragging position from the set point).
+     (optional)* Fr(P): Measure force at the scragging position(take the tolerance of scragging position from the set point).
+     (optional)* TD: Apply time delay.(you can add time delay 1-3 sec as your wish)
      * Mv(P): Return to free length.
      * Scrag: Reference the row number of the first `Mv(P)` command and include the repetition count (e.g., `"R03,4"`).
 
@@ -154,6 +155,8 @@ CRITICAL RULES FOR TEST SEQUENCE GENERATION:
 4. **Dynamic Behavior**:
    - DO NOT hard-code any values. Dynamically extract and use the user-provided specifications.
    - If multiple set points have scragging enabled, use the LAST one for the scragging sequence.
+5. Ensure that Freelength (FL) is always considered negative (if not mentioned),  If the set-point position is less than free length,
+   interpret it as a positive value.always mention the sign + or - in condition before the value without space
 
 COMMAND USAGE GUIDELINES:
 - **ZF (Zero Force):** First command; empty condition and speed.
@@ -211,31 +214,31 @@ IMPORTANT SCRAGGING RULES:
 
 EXAMPLE CORRECT SEQUENCE:
 Given:
-- Free Length: 80.0 mm (Tolerance: 76.0, 84.0)
-- Set Point 1: Position = 60.0 mm, Load = 20.0±10.0% N, Scrag = Enabled (2 times)
-- Set Point 2: Position = 40.0 mm, Load = 30.0±10.0% N
+- Free Length: -80.0 mm (Tolerance: -76.0, -84.0)
+- Set Point 1: Position = +60.0 mm, Load = 20.0±10.0% N, Scrag = Enabled (2 times)
+- Set Point 2: Position = +40.0 mm, Load = 30.0±10.0% N
 
 Correct Sequence:
 Row	CMD	Description	Condition	Unit	Tolerance	Speed rpm
 R00	ZF	Zero Force				
-R01	TH	Search Contact	10	N		10
-R02	FL(P)	Measure Free Length-Position		mm	80.0(76.0,84.0)	
-R03	Mv(P)	Move to Scragging Position	60.0	mm		50
-R04	Fr(P)	Force @ Scragging Position		N 20.0(18.0,22.0)
-R05	Mv(P)	Return to Free Length	80.0	mm		50
+R01	TH	Search Contact	+10	N		10
+R02	FL(P)	Measure Free Length-Position		mm	-80.0(-76.0,-84.0)	
+R03	Mv(P)	Move to Scragging Position	+60.0	mm		50
+R04	Fr(P)	Force @ Scragging Position		N 20.0(18.0,22.0) (or) TD	Time Delay	1	Sec	
+R05	Mv(P)	Return to Free Length	-80.0	mm		50
 R06	Scrag	Scragging	R03,2			
-R07	Mv(P)	Move to Set Point 1	60.0	mm		50
+R07	Mv(P)	Move to Set Point 1	+60.0	mm		50
 R08	Fr(P)	Force @ Set Point 1		N	20.0(18.0,22.0)	
 R09	TD	Time Delay	1	Sec		
-R10	Mv(P)	Move to Set Point 2	40.0	mm		50
+R10	Mv(P)	Move to Set Point 2	+40.0	mm		50
 R11	Fr(P)	Force @ Set Point 2		N	30.0(27.0,33.0)	
 R12	TD	Time Delay	1	Sec		
-R13	Mv(P)	Return to Free Length	80.0	mm		50
+R13	Mv(P)	Return to Free Length	-80.0	mm		50
 R14	PMsg	User Message	Test Completed			
 
 This example demonstrates:
 - Tolerances are included for the `FL(P)` command.
-- Scragging uses the position from Set Point 1 (60.0 mm).
+- Scragging uses the position from Set Point 1 (-60.0 mm).
 - The Scrag command references R03 with 2 repetitions.
 - Set points are processed sequentially after scragging.
 

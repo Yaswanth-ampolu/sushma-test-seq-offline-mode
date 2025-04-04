@@ -657,7 +657,7 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
     
     Args:
         sequence: Sequence to export.
-        file_path: Path to the output file. Will be modified to follow pattern "AS 01~<Part Number>.txt"
+        file_path: Path to the output file. Will be modified to follow pattern "AS 02~<Part Number>.txt"
         
     Returns:
         Tuple of (success flag, error message)
@@ -685,7 +685,7 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
             output_dir = "."
         
         # Create the new filename following the requested format
-        new_filename = f"AS 01~{part_number}.txt"
+        new_filename = f"AS 02~{part_number}.txt"
         
         # Combine directory with new filename
         new_file_path = os.path.join(output_dir, new_filename)
