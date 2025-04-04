@@ -695,8 +695,8 @@ def export_txt(sequence: TestSequence, file_path: str) -> Tuple[bool, str]:
         
         with open(new_file_path, "w") as f:
             # Write header with mapping from specification panel values - with vertical pipe separators
-            f.write(f"1 | Part Number | -- | {part_name} |\n")
-            f.write(f"2 | Model Number | -- | {part_number} |\n")
+            f.write(f"1 | Part Number | -- | {part_number} |\n")
+            f.write(f"2 | Model Number | -- | {part_name} |\n")
             f.write(f"3 | Free Length | mm | {free_length} |\n")
             
             # Only include test mode and safety limit if they exist
