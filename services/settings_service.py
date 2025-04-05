@@ -559,4 +559,33 @@ class SettingsService:
                 "is_maximized": False
             }
         
-        return geometry 
+        return geometry
+    
+    def reset_window_geometry(self):
+        """Reset only the window geometry settings while preserving other settings."""
+        try:
+            # Store current API key and other important settings
+            api_key = self.settings.get("api_key", "")
+            spring_spec = self.settings.get("spring_specification", None)
+            
+            # Reset window geometry to defaults
+            self.settings["window_geometry"] = {
+                "x": 100,
+                "y": 100,
+                "width": 1200,
+                "height": 800,
+                "is_maximized": False
+            }
+            
+            # Restore important settings
+            self.settings["api_key"] = api_key
+            self.settings["spring_specification"] = spring_spec
+            
+            # Save the updated settings
+            self.save_settings()
+            
+            logging.info("Window geometry reset while preserving other settings")
+            return True
+        except Exception as e:
+            logging.error(f"Error resetting window geometry: {e}")
+            return False 

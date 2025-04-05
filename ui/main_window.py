@@ -150,27 +150,54 @@ class MainWindow(QMainWindow):
     def restore_window_geometry(self):
         """Restore window position and size from settings."""
         try:
+            # Get the primary screen geometry
+            screen = QApplication.primaryScreen().availableGeometry()
+            
+            # Reset window geometry if needed while preserving API key
+            if not self.settings_service.get_window_geometry():
+                self.settings_service.reset_window_geometry()
+            
             # Get window geometry from settings
             geometry = self.settings_service.get_window_geometry()
             
+            # Get the desired window size
+            width = geometry.get("width", 1200)
+            height = geometry.get("height", 800)
+            
+            # Calculate the center position on the primary screen
+            x = (screen.width() - width) // 2
+            y = (screen.height() - height) // 2
+            
+            # Ensure the window is within the primary screen bounds
+            x = max(screen.left(), min(x, screen.right() - width))
+            y = max(screen.top(), min(y, screen.bottom() - height))
+            
             # Apply window position and size
-            self.setGeometry(
-                geometry.get("x", 100),
-                geometry.get("y", 100),
-                geometry.get("width", 1200),
-                geometry.get("height", 800)
-            )
+            self.setGeometry(x, y, width, height)
             
             # Apply maximized state if needed
             if geometry.get("is_maximized", False):
                 self.showMaximized()
-                
+            else:
+                # Ensure window is normal (not minimized)
+                self.setWindowState(Qt.WindowNoState)
+                # Raise and activate window
+                self.raise_()
+                self.activateWindow()
+            
             # Log the restoration
-            logging.info(f"Restored window geometry: {geometry}")
+            logging.info(f"Restored window geometry: x={x}, y={y}, width={width}, height={height}")
         except Exception as e:
             # Log the error and use default values
             logging.error(f"Error restoring window geometry: {e}")
-            self.setGeometry(100, 100, *APP_WINDOW_SIZE)
+            # Reset window geometry while preserving settings
+            self.settings_service.reset_window_geometry()
+            # Center on primary screen with default size
+            screen = QApplication.primaryScreen().availableGeometry()
+            width, height = APP_WINDOW_SIZE
+            x = (screen.width() - width) // 2
+            y = (screen.height() - height) // 2
+            self.setGeometry(x, y, width, height)
     
     def save_window_geometry(self):
         """Save current window position and size to settings."""

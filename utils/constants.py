@@ -146,129 +146,72 @@ WHEN TO USE EACH FORMAT:
 CRITICAL RULES FOR TEST SEQUENCE GENERATION:
 1. **Scragging Implementation**:
    - ONLY include scragging sequence if explicitly specified in set point specifications with "Scrag = Enabled"
-   - If no set points have scragging enabled, DO NOT include any scragging commands
-   - When scragging is specified:
-     * Identify the last set point with scragging enabled
-     * Use the position value from this set point for the `Mv(P)` command
-     * Perform scragging sequence BEFORE processing regular set points
-     * Include steps: Mv(P) → Fr(P) → TD → Mv(P) → Scrag
+   - When a set point has scragging enabled:
+     * Use that set point's position for the scragging sequence
+     * Perform scragging sequence: Mv(P) → Fr(P) → TD → Mv(P) → Scrag
+     * IMPORTANT: ONLY skip that specific set point in the normal testing sequence
+     * Process ALL other set points, even if they have identical position/load values
+   - Example: If Set Point 1 has scragging enabled:
+     * Do scragging using Set Point 1's position
+     * Skip ONLY Set Point 1 in normal sequence
+     * Process ALL other set points, even if they match Set Point 1's values
 
 2. **Set Point Processing**:
-   - Process set points sequentially from Set Point 1 to n AFTER completing the scragging sequence (if applicable).
-   - For each set point, execute the cycle:
-     * Mv(P): Move to the set point position.
-     * Fr(P): Measure force at the position. Include tolerances if provided by the user or derived from specifications.
-     * TD: Apply time delay.
-
-3. **Sequence Format**:
-   - Use a properly formatted JSON array with these EXACT properties:
-     - `"Row"`: Sequential codes (e.g., R00, R01).
-     - `"CMD"`: Command codes (ZF, TH, FL(P), Mv(P), Fr(P), TD, Scrag, PMsg).
-     - `"Description"`: Standard command descriptions.
-     - `"Condition"`: Numeric values or text as required.
-     - `"Unit"`: Units separately (e.g., "N", "mm", "Sec").
-     - `"Tolerance"`: Format as `"value(min,max)"`. Leave empty (`""`) if no tolerance is specified.
-     - `"Speed rpm"`: Include values ONLY for commands that require them.
-
-4. **Dynamic Behavior**:
-   - DO NOT hard-code any values. Dynamically extract and use the user-provided specifications.
-   - If multiple set points have scragging enabled, use the LAST one for the scragging sequence.
-5. Ensure that Freelength (FL) is always considered negative (if not mentioned),  If the set-point position is less than free length,
-   interpret it as a positive value.always mention the sign + or - in condition before the value without space
-
-COMMAND USAGE GUIDELINES:
-- **ZF (Zero Force):** First command; empty condition and speed.
-- **TH (Search Contact):** Always use -5 as condition with N unit and speed 50 rpm.
-- **FL(P) (Measure Free Length-Position):**
-  - Include tolerance if provided by the user or derived from specifications. Format as `"value(min,max)"`.
-  - Empty condition field; include tolerance.
-- **Mv(P) (Move to Position):** 
-  - Use first_speed value (from specifications) for compression/test movements
-  - Use second_speed value (from specifications) for return movements
-  - If speeds are not specified, default to 50 rpm
-  - The position value depends on the test type.
-- **Scrag (Scragging):**
-  - Reference the row number of the `Mv(P)` command used for the scragging position.
-  - Include the repetition count (e.g., `"R03,4"`).
-- **Fr(P) (Force @ Position):**
-  - Include tolerances if provided by the user or derived from specifications. Format as `"value(min,max)"`,for Fr(p) in scragging take tolerances of set point for which scragging is enabled.
-  - Empty condition field; empty speed.
-- **TD (Time Delay):** Insert delay as specified.
-- **PMsg (User Message):** Use `"Test Completed"` in the condition field; empty speed.
-
-STANDARD SEQUENCE ORDERING:
-When test mode is height and component type is compression:
-1. INITIAL COMMANDS (Fixed):
-   ZF → TH → FL(P)
-2. SCRAGGING SEQUENCE (ONLY when explicitly enabled for a set point):
-   - Mv(P) to scragging length (using the last set point's position where scragging is enabled) with first_speed
-   - Fr(P) to measure force at scragging length, take tolerance from set point where scragging is enabled
-   - TD for time delay
-   - Mv(P) to return to free length with second_speed
-   - Scrag command referencing the first Mv(P) command row and repetitions
-3. SET POINTS PROCESSING:
-   - For each set point:
+   - After scragging, process ALL set points EXCEPT the specific one that had scragging enabled
+   - Decision to skip is based ONLY on "Scrag = Enabled" flag, NOT on position/load values
+   - Even if multiple set points have identical values, process each one unless it specifically had scragging enabled
+   - For each non-scragged set point:
      * Mv(P) to set point position with first_speed
-     * Fr(P) to measure force (include tolerances if available)
+     * Fr(P) to measure force with tolerances
      * TD for time delay
-4. COMPLETION:
-   - Mv(P) to free length with second_speed
-   - PMsg for completion
-
-FORCE MEASUREMENT TOLERANCES:
-- For each `Fr(P)` command, include tolerances if provided by the user or derived from specifications.
-- Format tolerances as `"value(min,max)"` (e.g., `"23.6(21.24,26.04)"`).
-- Leave the tolerance field empty (`""`) only if no tolerance is specified.
 
 FREE LENGTH TOLERANCES:
-- For the `FL(P)` command, include tolerances if provided by the user or derived from specifications.
-- Format tolerances as `"value(min,max)"` (e.g., `"56.0(53.2,58.8)"`).
-- Leave the tolerance field empty (`""`) only if no tolerance is specified.
-
-IMPORTANT SCRAGGING RULES:
-1. Scragging MUST occur AFTER FL(P) and BEFORE set point processing.
-2. Scragging sequence requires EXACTLY 4 commands in order:
-   - Mv(P) to scragging position
-   - Fr(P) at that position
-   - Mv(P) back to free length
-   - Scrag command referencing the first Mv(P)
-3. The Scrag command MUST reference the row number of the first Mv(P).
-4. Return to free length MUST use the same value as FL(P).
+- For the `FL(P)` command, tolerance format must be "value(min,max)" where:
+  * value = original free length (always negative)
+  * min = 99% of free length (negative value)
+  * max = positive version of min value (same magnitude but positive)
+- Example: For free length -80.0 mm:
+  * min = -78.8 (99% of -80.0)
+  * max = +78.8 (positive version of -78.8)
+  * Format: "-80.0(-78.8,78.8)"
 
 EXAMPLE CORRECT SEQUENCE:
 Given:
-- Free Length: -80.0 mm (Tolerance: -78.8, 0) #the tolerance should be calculated based on the free length value first value is 99 percent of free length value and second value is 0
-- Set Point 1: Position = +60.0 mm, Load = 20.0±10.0% N, Scrag = Enabled (2 times)
-- Set Point 2: Position = +40.0 mm, Load = 30.0±10.0% N
+- Free Length: -110.6 mm (Tolerance: -109.54, 109.54)
+- Set Point 1: Position = +99.45 mm, Load = 4100.0±15.0% N, Scrag = Enabled (2 times)
+- Set Point 2: Position = +106.0 mm, Load = 1494.0±15.0% N
+- Set Point 3: Position = +99.45 mm, Load = 4100.0±15.0% N (Same values as Set Point 1)
 
 Correct Sequence:
 Row	CMD	Description	Condition	Unit	Tolerance	Speed rpm
 R00	ZF	Zero Force				
 R01	TH	Search Contact	-5	N		50
-R02	FL(P)	Measure Free Length-Position		mm	-80.0(-78.8, 0)	
-R03	Mv(P)	Move to Scragging Position	+60.0	mm		50
-R04	 TD	Time Delay	3	Sec	
-R05	Mv(P)	Return to Free Length	-80.0	mm		50
-R06	Scrag	Scragging	R03,2			
-R07	Mv(P)	Move to Set Point 1	+60.0	mm		50
-R08	Fr(P)	Force @ Set Point 1		N	20.0(18.0,22.0)	
-R09	TD	Time Delay	3	Sec		
-R10	Mv(P)	Move to Set Point 2	+40.0	mm		50
-R11	Fr(P)	Force @ Set Point 2		N	30.0(27.0,33.0)	
-R12	TD	Time Delay	3	Sec		
-R13	Mv(P)	Return to Free Length	-80.0	mm		50
-R14	PMsg	User Message	Test Completed			
+R02	FL(P)	Measure Free Length-Position		mm	-110.6(-109.54,109.54)	
+R03	Mv(P)	Move to Scragging Position	+99.45	mm		50
+R04	Fr(P)	Force @ Scragging Position		N	4100.0(3485.0,4715.0)	
+R05	TD	Time Delay	3	Sec		
+R06	Mv(P)	Return to Free Length	-110.6	mm		50
+R07	Scrag	Scragging	R03,2			
+R08	Mv(P)	Move to Set Point 2	+106.0	mm		50
+R09	Fr(P)	Force @ Set Point 2		N	1494.0(1270.1,1717.9)	
+R10	TD	Time Delay	3	Sec		
+R11	Mv(P)	Move to Set Point 3	+99.45	mm		50
+R12	Fr(P)	Force @ Set Point 3		N	4100.0(3485.0,4715.0)	
+R13	TD	Time Delay	3	Sec		
+R14	Mv(P)	Return to Free Length	-110.6	mm		50
+R15	PMsg	User Message	Test Completed			
 
 This example demonstrates:
-- keep  the condition -5 and speed 50 for th command (search contact)
-- Tolerances are included for the `FL(P)` command.
-- Scragging uses the position from Set Point 1 (-60.0 mm).
-- The Scrag command references R03 with 2 repetitions.
-- Set points are processed sequentially after scragging.
+- Set Point 1 has scragging enabled:
+  * Its position (+99.45 mm) is used for scragging
+  * ONLY Set Point 1 is skipped in normal sequence
+- Set Point 2 is processed normally
+- Set Point 3 is processed normally EVEN THOUGH it has identical values to Set Point 1
+- Proper sequence flow: scragging → remaining set points → completion
 
 EXAMPLE CORRECT SEQUENCE (WITHOUT SCRAGGING):
 Given:
-- Free Length: -100.0 mm (Tolerance: -99.0, 0)  #99% of free length for first value
+- Free Length: -100.0 mm (Tolerance: -99.0, 99.0)  #99% of free length for first value and positive version of first value for second value
 - Set Point 1: Position = +75.0 mm, Load = 50.0±5.0% N
 - Set Point 2: Position = +50.0 mm, Load = 100.0±5.0% N
 - Set Point 3: Position = +25.0 mm, Load = 150.0±5.0% N
@@ -279,7 +222,7 @@ Correct Sequence:
 Row	CMD	Description	Condition	Unit	Tolerance	Speed rpm
 R00	ZF	Zero Force				
 R01	TH	Search Contact	-5	N		50
-R02	FL(P)	Measure Free Length-Position		mm	-100.0(-99.0,0)	
+R02	FL(P)	Measure Free Length-Position		mm	-100.0(-99.0,99.0)	
 R03	Mv(P)	Move to Set Point 1	+75.0	mm		30
 R04	Fr(P)	Force @ Set Point 1		N	50.0(47.5,52.5)	
 R05	TD	Time Delay	3	Sec		
