@@ -198,6 +198,10 @@ class OllamaAPIClientWorker(QObject):
         # Extract free length value for template
         free_length_value = self.parameters.get('Free Length', 'Not provided')
         
+        # Extract first_speed and second_speed from parameters
+        first_speed_value = self.parameters.get('First Speed', '50')
+        second_speed_value = self.parameters.get('Second Speed', '50')
+        
         # If free_length_value is not provided, check if it's in the spring_specification
         if free_length_value == 'Not provided' and 'spring_specification' in self.parameters:
             # Try to get it from the spring_specification
@@ -242,7 +246,9 @@ class OllamaAPIClientWorker(QObject):
             test_type_text=test_type_text,
             prompt=original_prompt,
             free_length_value=free_length_value,
-            intent_flag=intent_flag
+            intent_flag=intent_flag,
+            first_speed_value=first_speed_value,
+            second_speed_value=second_speed_value
         )
         
         # Add explicit FREE_LENGTH_INFO if we're generating a test sequence and have the value

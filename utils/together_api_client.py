@@ -176,6 +176,13 @@ class TogetherAPIClientWorker(QObject):
         # Get specifications status if provided
         specifications_status = self.parameters.get('specifications_status', 'No specification status provided')
         
+        # Extract first_speed and second_speed from parameters
+        first_speed_value = self.parameters.get('First Speed', '50')
+        second_speed_value = self.parameters.get('Second Speed', '50')
+        
+        # Get free length value for the template
+        free_length_value = self.parameters.get('Free Length', 'Not specified')
+        
         # Check if test_type is provided in parameters
         test_type_text = ""
         if "Test Type" in self.parameters:
@@ -189,7 +196,10 @@ class TogetherAPIClientWorker(QObject):
         user_prompt = user_prompt_template.format(
             parameter_text=parameter_text,
             test_type_text=test_type_text,
-            prompt=original_prompt
+            prompt=original_prompt,
+            first_speed_value=first_speed_value,
+            second_speed_value=second_speed_value,
+            free_length_value=free_length_value
         )
         
         # Include previous context if available
