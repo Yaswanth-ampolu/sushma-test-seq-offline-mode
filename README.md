@@ -1,4 +1,4 @@
-# Spring Test Sequence Generator
+# AI Spring Test Sequence Generator
 
 A desktop application for generating test sequences for spring testing machines. This application uses modern large language models to generate test sequences based on natural language descriptions of spring parameters.
 
